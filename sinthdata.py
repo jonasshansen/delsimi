@@ -12,6 +12,34 @@ import scipy
 
 class delsimi(object):
 	def __init__(self):
+		"""
+		Simulate stellar images from Delphini-1.
+		
+		Future Extensions
+		-----------------
+		This is a list of possible future extensions to this code. The list is
+		largely inspired by the SPyFFI manual which is linked to here:
+			
+			https://github.com/TESScience/SPyFFI
+			
+		- Smeared PSF with length inferred from satellite speed and exposure time
+		- True pixel sizes / frame size
+		- Catalog stars
+		- Additional stars
+		- Pixel sensitivity variations?
+		- Background
+		- Photon noise
+		- Readout smear
+		- Saturated pixels
+		- Cosmic rays
+		- Position variable PSF
+		
+		Code Authors
+		------------
+		Carolina von Essen, cessen@phys.au.dk
+		Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
+		"""
+		
 		self.infiledir = "../infiles"
 		self.outfiledir = "../outfiles"
 		
@@ -31,8 +59,9 @@ class delsimi(object):
 
 
 	def makebias(self):
-		
-		# Create bias images. #################################################################################
+		"""
+		Make bias frames.
+		"""
 		
 		biasmeanr = 3.75394283333 ; biasstdevr = 0.532235493781
 		biasmeang = 2.34252829167 ; biasstdevg = 0.506928983646
@@ -57,8 +86,9 @@ class delsimi(object):
 
 
 	def makeflat(self):
-		
-		# Create flats images. #################################################################################
+		"""
+		Make flat frames.
+		"""
 		
 		master_flat = np.zeros((self.jpgfile.size[0],self.jpgfile.size[1], 3), "uint8") 
 		master_flatr = np.zeros(self.jpgfile.size[0]*self.jpgfile.size[1]).reshape(self.jpgfile.size[0], self.jpgfile.size[1])
@@ -108,8 +138,9 @@ class delsimi(object):
 
 
 	def makescience(self):
-		
-		# Create science frames over master flat. ################################################################
+		"""
+		Make science frames using the master flat.
+		"""
 		
 		sciencer = np.zeros(self.jpgfile.size[0]*self.jpgfile.size[1]).reshape((self.jpgfile.size[0], self.jpgfile.size[1]))
 		scienceg = np.zeros(self.jpgfile.size[0]*self.jpgfile.size[1]).reshape((self.jpgfile.size[0], self.jpgfile.size[1]))
