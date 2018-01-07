@@ -5,17 +5,27 @@ from scipy import misc
 import matplotlib
 import scipy
 import math as mt
+import os
 
 ##############################################################################
 ##############################################################################
 
-jpgfile = Image.open("../img002012.jpg")
-print jpgfile.bits, jpgfile.size, jpgfile.format
+infiledir = "../infiles"
+outfiledir = "../outfiles"
+
+# Load jpg file:
+# TODO: what is this used for?
+jpgfile = Image.open(os.path.join("../infiles","Southern_Cross.jpg"))
+print(jpgfile.bits, jpgfile.size, jpgfile.format)
 jpgfile.size = np.array([200,200])
 
-biasnr = 10
-flatsnr = 3
-sciencenr = 30
+# Define number of output frames:
+biasnr = 1
+flatsnr = 1
+sciencenr = 1
+#biasnr = 10
+#flatsnr = 3
+#sciencenr = 30
 
 biasmeanr = 3.75394283333 ; biasstdevr = 0.532235493781
 biasmeang = 2.34252829167 ; biasstdevg = 0.506928983646
@@ -35,7 +45,7 @@ for i in range(biasnr):
 
     imout = 'bias_'+str(i)+'.jpg'
     
-    scipy.misc.imsave(('bias_%02d.jpg' % i), bias_RGB)
+    scipy.misc.imsave(os.path.join(outfiledir,'bias_%02d.jpg' % i), bias_RGB)
     
 # Create flats images. #################################################################################
 
@@ -66,7 +76,7 @@ for i in range(flatsnr):
     flats_RGB[:,:,1] = flatsg
     flats_RGB[:,:,2] = flatsb
 
-    misc.imsave('flats_%02d.jpg' % i, flats_RGB)
+    misc.imsave(os.path.join(outfiledir, 'flats_%02d.jpg' % i), flats_RGB)
 
     master_flatr = master_flatr + flatsr
     master_flatg = master_flatg + flatsg
@@ -80,8 +90,8 @@ master_flat[:,:,0] = master_flatr
 master_flat[:,:,1] = master_flatg
 master_flat[:,:,2] = master_flatb
 
-misc.imsave('master_flat.jpg', master_flat)
-misc.imsave('master_flat_norm.jpg', master_flat/np.mean(master_flat))
+misc.imsave(os.path.join(outfiledir,'master_flat.jpg'), master_flat)
+misc.imsave(os.path.join(outfiledir,'master_flat_norm.jpg'), master_flat/np.mean(master_flat))
   
 # Create science frames over master flat. ################################################################
 
@@ -114,4 +124,4 @@ for i in range(sciencenr):
     science_RGB[:,:,1] = scienceg
     science_RGB[:,:,2] = scienceb
 
-    misc.imsave('science_%02d.jpg' % i, science_RGB)
+    misc.imsave(os.path.join(outfiledir,'science_%02d.jpg' % i), science_RGB)
