@@ -1,11 +1,11 @@
-from PIL import Image, ImageEnhance
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
+#import math as mt
+#import matplotlib
+from PIL import Image
+import os
 import numpy as np
 from scipy import misc
-import matplotlib
 import scipy
-import math as mt
-import os
 
 ##############################################################################
 ##############################################################################
