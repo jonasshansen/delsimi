@@ -24,7 +24,9 @@ class delsimi(object):
 			
 		- Smeared PSF with length inferred from satellite speed and exposure time
 		- True pixel sizes / frame size
+		- Focus change
 		- Catalog stars
+		- Jitter
 		- Additional stars
 		- Pixel sensitivity variations?
 		- Background
@@ -34,10 +36,33 @@ class delsimi(object):
 		- Cosmic rays
 		- Position variable PSF
 		
+		PSF
+		---
+		For the point spread function (PSF) a Gaussian is applied. This is an
+		approximation.
+		
+		MTF
+		---
+		# TODO: is this correct?
+		The Modulation transfer function (MTF) is a description of both jitter
+		(high temporal frequency compared to exposure time) and smear (low
+		temporal frequency compared to exposure time). It ferciliates the 
+		simulation of movement during CCD integration. Thus the smear caused
+		by the orbital motion of the satellite as well as possible jitter can
+		be included in the simulation.
+		NOTE: This is currently not implemented.
+		
 		Code Authors
 		------------
-		Carolina von Essen, cessen@phys.au.dk
-		Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
+		Carolina von Essen, cessen@phys.au.dk (base code, see first commit on
+		Github)
+		
+		Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com (extensions, see all
+		but the first commit on Github)
+		
+		Online Repository
+		-----------------
+		https://github.com/jonasshansen/delsimi
 		"""
 		
 		self.infiledir = "../infiles"
@@ -56,6 +81,9 @@ class delsimi(object):
 		#self.biasnr = 10
 		#self.flatsnr = 3
 		#self.sciencenr = 30
+
+
+
 
 
 	def makebias(self):
@@ -163,6 +191,7 @@ class delsimi(object):
 					
 					biaslevel = np.random.normal(self.biasmeanr*4., self.biasstdevr*4.)
 					
+					# TODO: apply integratedGaussian instead
 					sciencer[l1,l2] = (self.master_flat[l1,l2,0]/np.mean(self.master_flat))*biaslevel + 10. + 190.*(np.exp(- ((float(l1) - randx)**2/(2.*sigmax_r**2) + (float(l2) - randy)**2/(2.*sigmax_r**2) ))) 
 					scienceg[l1,l2] = (self.master_flat[l1,l2,1]/np.mean(self.master_flat))*biaslevel + 5. + 190.*(np.exp(- ((float(l1) - randx)**2/(2.*sigmax_g**2) + (float(l2) - randy)**2/(2.*sigmax_g**2) )))
 					scienceb[l1,l2] = (self.master_flat[l1,l2,2]/np.mean(self.master_flat))*biaslevel + 8. + 190.*(np.exp(- ((float(l1) - randx)**2/(2.*sigmax_b**2) + (float(l2) - randy)**2/(2.*sigmax_b**2) )))
