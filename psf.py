@@ -1,31 +1,52 @@
 import numpy as np
-#import scipy
 from scipy.special import erf
+from scipy.signal import convolve2d
 
 
 class PSF():
-	def __init__(self):
+	def __init__(self, integrationTime):
 		"""
 		Approximate the PSF in stellar images from Delphini-1.
 		
-		Use the following sources to smear and jitter:
+		Future Extensions
+		-----------------
+		Linear filters:
+		They posses additivity (L[f+g] = L[f] + L[g]) and homogeneity (L[cf] =
+		cL[f], where c is a constant) according to Bogges and Narcowich 2009, 
+		p. 110.
+		
+		Use the following sources for ideas on applying smear and jitter:
 		https://www.osapublishing.org/ao/fulltext.cfm?uri=ao-32-32-6503&id=40363
 		https://github.com/TESScience/SPyFFI/blob/master/PSF.py
 		https://github.com/TESScience/SPyFFI/blob/master/Jitter.py
+		
+		Code Author
+		-----------
+		Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
 		"""
+		self.integrationTime = integrationTime # seconds
 
-	def makeJitter(self):
+	def makeJitterKernel(self):
+		# make independent of integration time and satellite pitch, yaw, roll
 		pass
 	
-	def makeSmear(self):
+	def makeSmearKernel(self):
+		# make dependent on integration time and satellite position
 		pass
 
-	def makeFocus(self):
+	def makeFocusKernel(self):
+		# start out by making this a constant blur
 		pass
 
-	def convolvePSF(self):
-#		scipy.signal.convolve2d
-		pass
+	def convolvePSF(self, PSFunconvolved, kernel):
+		"""
+		Inspired by populateJitteredPSFLibrary in 
+		
+		https://github.com/TESScience/SPyFFI/blob/master/PSF.py
+		
+		Use only the subpixel-resolution PSF for this!
+		"""
+		return convolve2d(PSFunconvolved, kernel, 'same', 'fill', 0)
 
 
 	def integratedGaussian(self, x, y, flux, x_0, y_0, sigma=1):

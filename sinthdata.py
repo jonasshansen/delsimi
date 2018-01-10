@@ -7,13 +7,16 @@ import os
 import numpy as np
 import scipy
 
-##############################################################################
-##############################################################################
 
 class delsimi(object):
-	def __init__(self):
+	def __init__(self, integrationTime = 30.0):
 		"""
 		Simulate stellar images from Delphini-1.
+		
+		Input
+		-----
+		integrationTime (float)
+			CCD integration time in seconds. Default is 30 seconds.
 		
 		Future Extensions
 		-----------------
@@ -24,6 +27,7 @@ class delsimi(object):
 			
 		- Smeared PSF with length inferred from satellite speed and exposure time
 		- True pixel sizes / frame size
+		- Simple noise
 		- Focus change
 		- Catalog stars
 		- Jitter
@@ -64,6 +68,7 @@ class delsimi(object):
 		-----------------
 		https://github.com/jonasshansen/delsimi
 		"""
+		self.integrationTime = integrationTime
 		
 		self.infiledir = "../infiles"
 		self.outfiledir = "../outfiles"
@@ -81,9 +86,9 @@ class delsimi(object):
 		#self.biasnr = 10
 		#self.flatsnr = 3
 		#self.sciencenr = 30
-
-
-
+		
+		# Get PSF:
+		# TODO: load PSF class and instantiate here
 
 
 	def makebias(self):
