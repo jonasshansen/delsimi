@@ -63,6 +63,7 @@ class PSF():
 		
 		# Convolve the PSF with the interpolated positions:
 		highresImage = self.convolvePSF(PSFhighres, smearKernel)
+		# TODO: check what the convolution does in terms of scale and angle
 		
 		# Define pixel centered index arrays for the interpolater:
 		PRFrow = np.arange(0.5, PSFhighres.shape[0] + 0.5)
@@ -226,6 +227,7 @@ if __name__ == '__main__':
 	# Evaluate PSF with specified parameters:
 	img, smearKernel, PSFhighres, highresImage = dpsf.evaluate(
 			starpos=[5,10], integrationTime=10, angle=np.pi/6, speed=1, fwhm=2)
+	# TODO: find out why the star doesn't appear where it should
 	
 	# Plot:
 	fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
