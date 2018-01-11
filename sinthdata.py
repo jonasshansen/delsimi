@@ -6,6 +6,7 @@ from PIL import Image
 import os
 import numpy as np
 import scipy
+from psf import PSF
 
 
 class delsimi(object):
@@ -88,7 +89,7 @@ class delsimi(object):
 		#self.sciencenr = 30
 		
 		# Get PSF:
-		# TODO: load PSF class and instantiate here
+#		dpsf = 
 
 
 	def makebias(self):
@@ -213,9 +214,9 @@ if __name__ == '__main__':
 	print('Making bias...')
 	simtest.makebias()
 	print('...done!')
-	print('Making flat')
+	print('Making flat...')
 	simtest.makeflat()
 	print('...done!')
-	print('Making science')
+	print('Making science...')
 	simtest.makescience()
 	print('...done!')

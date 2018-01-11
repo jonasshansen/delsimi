@@ -1,10 +1,12 @@
 import numpy as np
 from scipy.special import erf
 from scipy.signal import convolve2d
-
+from scipy.interpolate import RectBivariateSpline
+from scipy.interpolate import splprep
+from skimage.draw import line
 
 class PSF():
-	def __init__(self, integrationTime):
+	def __init__(self, imshape, superres = 50):
 		"""
 		Approximate the PSF in stellar images from Delphini-1.
 		
@@ -24,18 +26,111 @@ class PSF():
 		-----------
 		Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
 		"""
-		self.integrationTime = integrationTime # seconds
+		self.imshape = np.array(imshape) # shape of image in pixels
+#		self.PSFmaxShape = np.array([20,20]) # max size of PSF in pixels
+		self.superres = superres # subpixel resolution
+
+	def evaluate(self, starpos, integrationTime, angle, speed, fwhm = 2, 
+			jitter = False, focus = False):
+		"""
+		Evaluate a PSF that is smeared in one direction.
+		
+		Input
+		-----
+		starpos (array, float)
+			Row and column position in pixels of the star.
+		integrationTime (float)
+			CCD integration time.
+		angle (float)
+			Angle in radians of star CCD movement.
+		speed (float)
+			Speed of star CCD movement.
+		fwhm (float)
+			Full width at half maximum of PSF in pixels.
+		
+		Output
+		------
+		(2D array, float)
+			Smeared and pixel-integrated PSF.
+		"""
+		# Interpolate positions to subpixel grid:
+		positionsKernel = self.makeSmearKernel(starpos, integrationTime, 
+										angle, speed)
+		
+		# Get highres PSF:
+		PSFhighres = self.highresPSF(fwhm)
+		
+		# TODO: convolve highres PSF with focus and jitter here
+		
+		# Convolve the PSF with the interpolated positions:
+		highresImage = self.convolvePSF(PSFhighres, positionsKernel)
+		
+		# Define pixel centered index arrays for the interpolater:
+		PRFrow = np.arange(0.5, self.imshape[0] + 0.5)
+		PRFcol = np.arange(0.5, self.imshape[1] + 0.5)
+		
+		# Center around 0 and convert to PSF subpixel resolution:
+		PRFrow = (PRFrow - np.size(PRFrow) / 2) * self.superres
+		PRFcol = (PRFcol - np.size(PRFcol) / 2) * self.superres
+		
+		# Interpolate highresImage:
+		highresImageInterp = RectBivariateSpline(PRFcol, PRFrow, highresImage)
+		
+		# Integrate the interpolation to pixels:
+		out = np.zeros(self.imshape)
+		for row in range(self.imshape[0]):
+			for col in range(self.imshape[1]):
+				row_cen = - starpos[0]
+				col_cen = - starpos[1]
+				out[row,col] = highresImageInterp.integral(
+					col_cen-0.5, col_cen+0.5, row_cen-0.5, row_cen+0.5)
+		
+		# Normalise the PSF:
+		out /= np.nansum(out)
+		
+		return out
+
+	def makeSmearKernel(self, starpos, integrationTime, angle, speed):
+		"""
+		Make a smear kernel that describes the large-scale movement of a star
+		on the CCD. Do this by making a high resolution line that approximates
+		the movement of a star with a certain constant angle and speed across 
+		the CCD during the integrationTime.
+		
+		Input
+		-----
+		starpos (array, float)
+			Row and column position in pixels of the star.
+		integrationTime (float)
+			CCD integration time.
+		angle (float)
+			Angle in radians of star CCD movement.
+		speed (float)
+			Speed of star CCD movement.
+		
+		Output
+		------
+		(array, float)
+			Interpolated pixel positions of a star.
+		"""
+		imshapeHR = self.superres*self.imshape
+		out = np.zeros(imshapeHR)
+		r0 = starpos[0]
+		c0 = starpos[1]
+		r1 = r0 + self.superres*speed*integrationTime*np.sin(angle)
+		c1 = c0 + self.superres*speed*integrationTime*np.cos(angle)
+		rr, cc = line(r0, c0, r1, c1)
+		out[rr, cc] = 1
+		return out
 
 	def makeJitterKernel(self):
-		# make independent of integration time and satellite pitch, yaw, roll
-		pass
-	
-	def makeSmearKernel(self):
-		# make dependent on integration time and satellite position
+		# TODO: dependent on satellite pitch, yaw, roll
+		# Make spline of parametric curve:
+#		splprep([positions[:,1],positions[:,0]], s=0)
 		pass
 
 	def makeFocusKernel(self):
-		# start out by making this a constant blur
+		# TODO: start out by making this a constant blur
 		pass
 
 	def convolvePSF(self, PSFunconvolved, kernel):
@@ -48,6 +143,32 @@ class PSF():
 		"""
 		return convolve2d(PSFunconvolved, kernel, 'same', 'fill', 0)
 
+	def highresPSF(self, fwhm):
+		"""
+		Make a subpixel resolution PSF.
+		
+		Input
+		-----
+		fwhm (float)
+			Full width at half maximum of Gaussian PSF in pixels.
+		
+		Output
+		------
+		(2D array, float)
+			Subpixel-resolution PSF.
+		"""
+		# Make subpixel resolution grid with superres oversampling:
+		PSFshapeHR = self.superres*self.imshape
+		X, Y = np.meshgrid(np.arange(0,PSFshapeHR[1]), 
+						np.arange(0,PSFshapeHR[0]))
+		
+		# Get coordinates of center of grid:
+		x_0 = PSFshapeHR[1]/2 + 0.5
+		y_0 = PSFshapeHR[0]/2 + 0.5
+		
+		# Evaluate PSF on grid with superres increased width:
+		return self.integratedGaussian(X, Y, 1, x_0, y_0, 
+					sigma = self.superres*fwhm/(2*np.sqrt(2*np.log(2))))
 
 	def integratedGaussian(self, x, y, flux, x_0, y_0, sigma=1):
 		'''
@@ -85,3 +206,4 @@ class PSF():
 			  erf((x - x_0 - 0.5) / (np.sqrt(2) * sigma))) *
 			 (erf((y - y_0 + 0.5) / (np.sqrt(2) * sigma)) -
 			  erf((y - y_0 - 0.5) / (np.sqrt(2) * sigma)))))
+	
