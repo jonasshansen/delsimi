@@ -89,7 +89,7 @@ class delsimi(object):
 		#self.sciencenr = 30
 		
 		# Get PSF:
-#		dpsf = 
+		dpsf = PSF(imshape = self.jpgfile.size, superres = 10)
 
 
 	def makebias(self):

@@ -6,7 +6,7 @@ from scipy.interpolate import splprep
 from skimage.draw import line
 
 class PSF():
-	def __init__(self, imshape, superres = 50):
+	def __init__(self, imshape, superres = 10):
 		"""
 		Approximate the PSF in stellar images from Delphini-1.
 		
@@ -26,8 +26,7 @@ class PSF():
 		-----------
 		Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
 		"""
-		self.imshape = np.array(imshape) # shape of image in pixels
-#		self.PSFmaxShape = np.array([20,20]) # max size of PSF in pixels
+		self.imshape = np.array(imshape) # shape of image in pixels (row, col)
 		self.superres = superres # subpixel resolution
 
 	def evaluate(self, starpos, integrationTime, angle, speed, fwhm = 2, 
@@ -117,8 +116,9 @@ class PSF():
 		out = np.zeros(imshapeHR)
 		r0 = starpos[0]
 		c0 = starpos[1]
-		r1 = r0 + self.superres*speed*integrationTime*np.sin(angle)
-		c1 = c0 + self.superres*speed*integrationTime*np.cos(angle)
+		r1 = r0 + np.int(self.superres*speed*integrationTime*np.sin(angle))
+		c1 = c0 + np.int(self.superres*speed*integrationTime*np.cos(angle))
+		# TODO: change implementation to subsubpixel line definition
 		rr, cc = line(r0, c0, r1, c1)
 		out[rr, cc] = 1
 		return out
@@ -206,4 +206,14 @@ class PSF():
 			  erf((x - x_0 - 0.5) / (np.sqrt(2) * sigma))) *
 			 (erf((y - y_0 + 0.5) / (np.sqrt(2) * sigma)) -
 			  erf((y - y_0 - 0.5) / (np.sqrt(2) * sigma)))))
+
+if __name__ == '__main__':
+	import matplotlib.pyplot as plt
 	
+	bkg = np.zeros([1500,2000],dtype=float)
+	dpsf = PSF(imshape=bkg.shape, superres=2)
+	img = dpsf.evaluate(starpos=[100,150], integrationTime=30, angle=np.pi/4, 
+			speed=40, fwhm=2)
+	
+	fig, ax = plt.subplots(1)
+	ax.imshow(img)
