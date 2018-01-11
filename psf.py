@@ -52,8 +52,8 @@ class PSF():
 		(2D array, float)
 			Smeared and pixel-integrated PSF.
 		"""
-		# Interpolate positions to subpixel grid:
-		positionsKernel = self.makeSmearKernel(starpos, integrationTime, 
+		# Create smear kernel:
+		smearKernel = self.makeSmearKernel(starpos, integrationTime, 
 										angle, speed)
 		
 		# Get highres PSF:
@@ -62,32 +62,38 @@ class PSF():
 		# TODO: convolve highres PSF with focus and jitter here
 		
 		# Convolve the PSF with the interpolated positions:
-		highresImage = self.convolvePSF(PSFhighres, positionsKernel)
+		highresImage = self.convolvePSF(PSFhighres, smearKernel)
 		
 		# Define pixel centered index arrays for the interpolater:
-		PRFrow = np.arange(0.5, self.imshape[0] + 0.5)
-		PRFcol = np.arange(0.5, self.imshape[1] + 0.5)
+		PRFrow = np.arange(0.5, PSFhighres.shape[0] + 0.5)
+		PRFcol = np.arange(0.5, PSFhighres.shape[1] + 0.5)
 		
-		# Center around 0 and convert to PSF subpixel resolution:
-		PRFrow = (PRFrow - np.size(PRFrow) / 2) * self.superres
-		PRFcol = (PRFcol - np.size(PRFcol) / 2) * self.superres
+#		# Center around 0:
+#		PRFrow = (PRFrow - np.size(PRFrow) / 2)
+#		PRFcol = (PRFcol - np.size(PRFcol) / 2)
+#		
+		# Convert to PSF subpixel resolution
+		PRFrow *= self.superres
+		PRFcol *= self.superres
 		
 		# Interpolate highresImage:
-		highresImageInterp = RectBivariateSpline(PRFcol, PRFrow, highresImage)
+		highresImageInterp = RectBivariateSpline(PRFrow, PRFcol, highresImage)
 		
 		# Integrate the interpolation to pixels:
-		out = np.zeros(self.imshape)
+		img = np.zeros(self.imshape)
 		for row in range(self.imshape[0]):
 			for col in range(self.imshape[1]):
-				row_cen = - starpos[0]
-				col_cen = - starpos[1]
-				out[row,col] = highresImageInterp.integral(
+#				row_cen = row - starpos[0]
+#				col_cen = col - starpos[1]
+				row_cen = row
+				col_cen = col
+				img[row,col] = highresImageInterp.integral(
 					col_cen-0.5, col_cen+0.5, row_cen-0.5, row_cen+0.5)
 		
 		# Normalise the PSF:
-		out /= np.nansum(out)
+		img /= np.nansum(img)
 		
-		return out
+		return img, smearKernel, PSFhighres, highresImage
 
 	def makeSmearKernel(self, starpos, integrationTime, angle, speed):
 		"""
@@ -207,13 +213,40 @@ class PSF():
 			 (erf((y - y_0 + 0.5) / (np.sqrt(2) * sigma)) -
 			  erf((y - y_0 - 0.5) / (np.sqrt(2) * sigma)))))
 
+
 if __name__ == '__main__':
 	import matplotlib.pyplot as plt
 	
-	bkg = np.zeros([1500,2000],dtype=float)
-	dpsf = PSF(imshape=bkg.shape, superres=2)
-	img = dpsf.evaluate(starpos=[100,150], integrationTime=30, angle=np.pi/4, 
-			speed=40, fwhm=2)
+	# Define background:
+	bkg = np.zeros([75,100],dtype=float)
 	
-	fig, ax = plt.subplots(1)
-	ax.imshow(img)
+	# Make PSF class instance:
+	dpsf = PSF(imshape=bkg.shape, superres=2)
+	
+	# Evaluate PSF with specified parameters:
+	img, smearKernel, PSFhighres, highresImage = dpsf.evaluate(
+			starpos=[5,10], integrationTime=10, angle=np.pi/6, speed=1, fwhm=2)
+	
+	# Plot:
+	fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
+	
+	ax1.imshow(img, origin='lower')
+	ax1.set_xlabel('Pixel column')
+	ax1.set_ylabel('Pixel row')
+	ax1.set_title('Final image')
+	
+	ax2.imshow(smearKernel, origin='lower')
+	ax2.set_title('Smear kernel')
+	
+	ax3.imshow(highresImage, origin='lower')
+	ax3.set_title('High resolution image')
+	
+	ax4.imshow(PSFhighres, origin='lower')
+	ax4.set_title('High resolution PRF')
+	
+	for ax in (ax2, ax3, ax4):
+		ax.set_xlabel('Subpixel column')
+		ax.set_ylabel('Subpixel row')
+	
+	fig.subplots_adjust(hspace=0.5)
+	
