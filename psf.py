@@ -69,13 +69,9 @@ class PSF():
 		PRFrow = np.arange(0.5, PSFhighres.shape[0] + 0.5)
 		PRFcol = np.arange(0.5, PSFhighres.shape[1] + 0.5)
 		
-#		# Center around 0:
-#		PRFrow = (PRFrow - np.size(PRFrow) / 2)
-#		PRFcol = (PRFcol - np.size(PRFcol) / 2)
-#		
-		# Convert to PSF subpixel resolution
-		PRFrow *= self.superres
-		PRFcol *= self.superres
+		# Convert from subpixel to pixel resolution:
+		PRFrow /= self.superres
+		PRFcol /= self.superres
 		
 		# Interpolate highresImage:
 		highresImageInterp = RectBivariateSpline(PRFrow, PRFcol, highresImage)
@@ -89,7 +85,7 @@ class PSF():
 				row_cen = row
 				col_cen = col
 				img[row,col] = highresImageInterp.integral(
-					col_cen-0.5, col_cen+0.5, row_cen-0.5, row_cen+0.5)
+					row_cen-0.5, row_cen+0.5, col_cen-0.5, col_cen+0.5)
 		
 		# Normalise the PSF:
 		img /= np.nansum(img)
