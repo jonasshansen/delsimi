@@ -90,8 +90,12 @@ class delsimi(object):
 		#self.flatsnr = 3
 		#self.sciencenr = 30
 		
-		# Get PSF:
-		dpsf = PSF(imshape = self.jpgfile.size, superres = 2)
+		# Make PSF class instance:
+		dpsf = PSF(imshape=self.jpgfile.size, superres=3)
+		
+		# Evaluate PSF with specified parameters:
+		img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
+				star=[10,15], integrationTime=10, angle=np.pi/7, speed=3, fwhm=1)
 
 
 	def makebias(self):

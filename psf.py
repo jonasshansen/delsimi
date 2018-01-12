@@ -2,8 +2,8 @@ import numpy as np
 from scipy.special import erf
 from scipy.signal import convolve2d
 from scipy.interpolate import RectBivariateSpline
-from scipy.interpolate import splprep
 from skimage.draw import line_aa
+#from scipy.interpolate import splprep
 
 class PSF():
 	def __init__(self, imshape, superres = 10):
@@ -236,11 +236,11 @@ if __name__ == '__main__':
 	bkg = np.zeros([30,40],dtype=float)
 	
 	# Make PSF class instance:
-	dpsf = PSF(imshape=bkg.shape, superres=3)
+	dpsf = PSF(imshape=bkg.shape, superres=10)
 	
 	# Evaluate PSF with specified parameters:
 	img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
-			star=[5,10], integrationTime=10, angle=np.pi/3, speed=1, fwhm=1)
+			star=[10,15], integrationTime=10, angle=np.pi/7, speed=3, fwhm=1)
 	
 	# Plot:
 	fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
@@ -263,4 +263,7 @@ if __name__ == '__main__':
 		ax.set_xlabel('Subpixel column')
 		ax.set_ylabel('Subpixel row')
 	
+	# Make space for the subplot titles:
 	fig.subplots_adjust(hspace=0.5)
+
+#	np.savetxt('img.out', 1e9*img)
