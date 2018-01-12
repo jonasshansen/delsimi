@@ -53,17 +53,19 @@ class PSF():
 			Smeared and pixel-integrated PSF.
 		"""
 		# Create smear kernel:
+		# TODO: change smear kernel to be centered on (0,0)
+		# TODO: reduce size to just fit the kernel + scale*fwhm
 		smearKernel = self.makeSmearKernel(starpos, integrationTime, 
 										angle, speed)
 		
 		# Get highres PSF:
+		# TODO: change PSF to be centered on (0,0)
 		PSFhighres = self.highresPSF(fwhm)
 		
 		# TODO: convolve highres PSF with focus and jitter here
 		
 		# Convolve the PSF with the interpolated positions:
 		highresImage = self.convolvePSF(PSFhighres, smearKernel)
-		# TODO: check what the convolution does in terms of scale and angle
 		
 		# Define pixel centered index arrays for the interpolater:
 		PRFrow = np.arange(0.5, PSFhighres.shape[0] + 0.5)
@@ -80,6 +82,7 @@ class PSF():
 		img = np.zeros(self.imshape)
 		for row in range(self.imshape[0]):
 			for col in range(self.imshape[1]):
+				# TODO: introduce the following to change star position
 #				row_cen = row - starpos[0]
 #				col_cen = col - starpos[1]
 				row_cen = row
@@ -218,12 +221,11 @@ if __name__ == '__main__':
 	bkg = np.zeros([75,100],dtype=float)
 	
 	# Make PSF class instance:
-	dpsf = PSF(imshape=bkg.shape, superres=2)
+	dpsf = PSF(imshape=bkg.shape, superres=3)
 	
 	# Evaluate PSF with specified parameters:
 	img, smearKernel, PSFhighres, highresImage = dpsf.evaluate(
 			starpos=[5,10], integrationTime=10, angle=np.pi/6, speed=1, fwhm=2)
-	# TODO: find out why the star doesn't appear where it should
 	
 	# Plot:
 	fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
