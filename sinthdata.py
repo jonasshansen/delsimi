@@ -78,7 +78,9 @@ class delsimi(object):
 		# TODO: what is this used for? jpg encoding?
 		self.jpgfile = Image.open(os.path.join("../infiles","Southern_Cross.jpg"))
 #		print(jpgfile.bits, jpgfile.size, jpgfile.format)
-		self.jpgfile.size = np.array([200,200])
+#		self.jpgfile.size = np.array([200,200])
+		# Set size in pixels to Delphini's CCD size, Aptina MT9T031 1/2" (4:3):
+		self.jpgfile.size = np.array([1536,2048])
 		
 		# Define number of output frames of each type:
 		self.biasnr = 1
@@ -89,7 +91,7 @@ class delsimi(object):
 		#self.sciencenr = 30
 		
 		# Get PSF:
-		dpsf = PSF(imshape = self.jpgfile.size, superres = 10)
+		dpsf = PSF(imshape = self.jpgfile.size, superres = 2)
 
 
 	def makebias(self):

@@ -3,7 +3,7 @@ from scipy.special import erf
 from scipy.signal import convolve2d
 from scipy.interpolate import RectBivariateSpline
 from scipy.interpolate import splprep
-from skimage.draw import line
+from skimage.draw import line_aa
 
 class PSF():
 	def __init__(self, imshape, superres = 10):
@@ -29,14 +29,14 @@ class PSF():
 		self.imshape = np.array(imshape) # shape of image in pixels (row, col)
 		self.superres = superres # subpixel resolution
 
-	def evaluate(self, starpos, integrationTime, angle, speed, fwhm = 2, 
+	def evaluate(self, star, integrationTime, angle, speed, fwhm = 1, 
 			jitter = False, focus = False):
 		"""
 		Evaluate a PSF that is smeared in one direction.
 		
 		Input
 		-----
-		starpos (array, float)
+		star (array, float)
 			Row and column position in pixels of the star.
 		integrationTime (float)
 			CCD integration time.
@@ -52,24 +52,35 @@ class PSF():
 		(2D array, float)
 			Smeared and pixel-integrated PSF.
 		"""
+		# Define subpixel buffer:
+		self.buffer = np.int(3*self.superres*fwhm)
+		
 		# Create smear kernel:
-		# TODO: change smear kernel to be centered on (0,0)
-		# TODO: reduce size to just fit the kernel + scale*fwhm
-		smearKernel = self.makeSmearKernel(starpos, integrationTime, 
-										angle, speed)
+		smearKernel = self.makeSmearKernel(integrationTime, angle, speed, fwhm)
+		self.kernelShape = smearKernel.shape
 		
 		# Get highres PSF:
-		# TODO: change PSF to be centered on (0,0)
 		PSFhighres = self.highresPSF(fwhm)
 		
 		# TODO: convolve highres PSF with focus and jitter here
 		
-		# Convolve the PSF with the interpolated positions:
+		# Convolve the PSF with the smear kernel:
 		highresImage = self.convolvePSF(PSFhighres, smearKernel)
 		
+		# Normalise the PRF:
+		highresImage /= np.nansum(highresImage) * self.superres**2
+		
 		# Define pixel centered index arrays for the interpolater:
-		PRFrow = np.arange(0.5, PSFhighres.shape[0] + 0.5)
-		PRFcol = np.arange(0.5, PSFhighres.shape[1] + 0.5)
+		PRFrow = np.arange(0.5, self.kernelShape[0] + 0.5)
+		PRFcol = np.arange(0.5, self.kernelShape[1] + 0.5)
+		
+		# Center around 0:
+		PRFrow = PRFrow - PRFrow.size / 2
+		PRFcol = PRFcol - PRFcol.size / 2
+		
+		# Move center to account for buffer zone:
+		PRFrow += self.buffer
+		PRFcol += self.buffer
 		
 		# Convert from subpixel to pixel resolution:
 		PRFrow /= self.superres
@@ -78,24 +89,23 @@ class PSF():
 		# Interpolate highresImage:
 		highresImageInterp = RectBivariateSpline(PRFrow, PRFcol, highresImage)
 		
-		# Integrate the interpolation to pixels:
-		img = np.zeros(self.imshape)
+		# Integrate the interpolation in each pixel:
+		# (integration of the spline outside the spline boundaries yield artefacts)
+		img = np.zeros(self.imshape, dtype='float64')
 		for row in range(self.imshape[0]):
 			for col in range(self.imshape[1]):
-				# TODO: introduce the following to change star position
-#				row_cen = row - starpos[0]
-#				col_cen = col - starpos[1]
-				row_cen = row
-				col_cen = col
-				img[row,col] = highresImageInterp.integral(
-					row_cen-0.5, row_cen+0.5, col_cen-0.5, col_cen+0.5)
+				# Get star position in PSF(t=0)-based coordinates:
+				row_cen = row - star[0]
+				col_cen = col - star[1]
+				# Determine whether to integrate current pixel value:
+				withinBoundary = highresImageInterp(row_cen, col_cen) > 1e-9
+				if withinBoundary:
+					# Integrate intepolation in the current pixel:
+					img[row,col] = highresImageInterp.integral(row_cen-0.5, row_cen+0.5, col_cen-0.5, col_cen+0.5)
 		
-		# Normalise the PSF:
-		img /= np.nansum(img)
-		
-		return img, smearKernel, PSFhighres, highresImage
+		return img, smearKernel, PSFhighres, highresImage, highresImageInterp
 
-	def makeSmearKernel(self, starpos, integrationTime, angle, speed):
+	def makeSmearKernel(self, integrationTime, angle, speed, fwhm):
 		"""
 		Make a smear kernel that describes the large-scale movement of a star
 		on the CCD. Do this by making a high resolution line that approximates
@@ -104,29 +114,34 @@ class PSF():
 		
 		Input
 		-----
-		starpos (array, float)
-			Row and column position in pixels of the star.
 		integrationTime (float)
 			CCD integration time.
 		angle (float)
 			Angle in radians of star CCD movement.
 		speed (float)
 			Speed of star CCD movement.
+		fwhm (float)
+			Full width at half maximum of PSF. Used to determine buffer pixels
+			around the line.
 		
 		Output
 		------
 		(array, float)
 			Interpolated pixel positions of a star.
 		"""
-		imshapeHR = self.superres*self.imshape
-		out = np.zeros(imshapeHR)
-		r0 = starpos[0]
-		c0 = starpos[1]
-		r1 = r0 + np.int(self.superres*speed*integrationTime*np.sin(angle))
-		c1 = c0 + np.int(self.superres*speed*integrationTime*np.cos(angle))
+		buffer = self.buffer
+		finalposRow = np.int(self.superres*speed*integrationTime*np.sin(angle))
+		finalposCol = np.int(self.superres*speed*integrationTime*np.cos(angle))
+		r0 = 0 + buffer
+		c0 = 0 + buffer
+		r1 = r0 + finalposRow
+		c1 = c0 + finalposCol
+		out = np.zeros([r1+buffer, c1+buffer])
 		# TODO: change implementation to subsubpixel line definition
-		rr, cc = line(r0, c0, r1, c1)
-		out[rr, cc] = 1
+#		rr, cc = line(r0, c0, r1, c1)
+#		out[rr, cc] = 1
+		rr, cc, val = line_aa(r0, c0, r1, c1)
+		out[rr, cc] = val
 		return out
 
 	def makeJitterKernel(self):
@@ -164,13 +179,13 @@ class PSF():
 			Subpixel-resolution PSF.
 		"""
 		# Make subpixel resolution grid with superres oversampling:
-		PSFshapeHR = self.superres*self.imshape
-		X, Y = np.meshgrid(np.arange(0,PSFshapeHR[1]), 
-						np.arange(0,PSFshapeHR[0]))
+		X, Y = np.meshgrid(np.arange(0,self.kernelShape[1]), 
+						np.arange(0,self.kernelShape[0]))
 		
-		# Get coordinates of center of grid:
-		x_0 = PSFshapeHR[1]/2 + 0.5
-		y_0 = PSFshapeHR[0]/2 + 0.5
+		# Define centroid position:
+		# TODO: fix bug where the starting position changes when the integrationTime changes
+		x_0 = self.kernelShape[1]/2 + 0.5
+		y_0 = self.kernelShape[0]/2 + 0.5
 		
 		# Evaluate PSF on grid with superres increased width:
 		return self.integratedGaussian(X, Y, 1, x_0, y_0, 
@@ -218,14 +233,14 @@ if __name__ == '__main__':
 	import matplotlib.pyplot as plt
 	
 	# Define background:
-	bkg = np.zeros([75,100],dtype=float)
+	bkg = np.zeros([30,40],dtype=float)
 	
 	# Make PSF class instance:
 	dpsf = PSF(imshape=bkg.shape, superres=3)
 	
 	# Evaluate PSF with specified parameters:
-	img, smearKernel, PSFhighres, highresImage = dpsf.evaluate(
-			starpos=[5,10], integrationTime=10, angle=np.pi/6, speed=1, fwhm=2)
+	img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
+			star=[5,10], integrationTime=10, angle=np.pi/3, speed=1, fwhm=1)
 	
 	# Plot:
 	fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
@@ -233,13 +248,13 @@ if __name__ == '__main__':
 	ax1.imshow(img, origin='lower')
 	ax1.set_xlabel('Pixel column')
 	ax1.set_ylabel('Pixel row')
-	ax1.set_title('Final image')
+	ax1.set_title('Pixel-integrated image')
 	
 	ax2.imshow(smearKernel, origin='lower')
 	ax2.set_title('Smear kernel')
 	
 	ax3.imshow(highresImage, origin='lower')
-	ax3.set_title('High resolution image')
+	ax3.set_title('High res. convolved PRF')
 	
 	ax4.imshow(PSFhighres, origin='lower')
 	ax4.set_title('High resolution PRF')
@@ -249,4 +264,3 @@ if __name__ == '__main__':
 		ax.set_ylabel('Subpixel row')
 	
 	fig.subplots_adjust(hspace=0.5)
-	
