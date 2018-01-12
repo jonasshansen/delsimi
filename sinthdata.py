@@ -78,8 +78,8 @@ class delsimi(object):
 		# TODO: what is this used for? jpg encoding?
 		self.jpgfile = Image.open(os.path.join("../infiles","Southern_Cross.jpg"))
 #		print(jpgfile.bits, jpgfile.size, jpgfile.format)
-#		self.jpgfile.size = np.array([200,200])
 		# Set size in pixels to Delphini's CCD size, Aptina MT9T031 1/2" (4:3):
+#		self.jpgfile.size = np.array([200,200])
 		self.jpgfile.size = np.array([1536,2048])
 		
 		# Define number of output frames of each type:
@@ -88,14 +88,10 @@ class delsimi(object):
 		self.sciencenr = 1
 		#self.biasnr = 10
 		#self.flatsnr = 3
-		#self.sciencenr = 30
+		#self.sciencenr = 
 		
-		# Make PSF class instance:
-		dpsf = PSF(imshape=self.jpgfile.size, superres=3)
-		
-		# Evaluate PSF with specified parameters:
-		img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
-				star=[10,15], integrationTime=10, angle=np.pi/7, speed=3, fwhm=1)
+		# TODO: Make a PSF instance here
+
 
 
 	def makebias(self):
@@ -187,6 +183,7 @@ class delsimi(object):
 		scienceb = np.zeros(self.jpgfile.size[0]*self.jpgfile.size[1]).reshape((self.jpgfile.size[0], self.jpgfile.size[1]))
 		
 		for i in range(self.sciencenr):
+			# TODO: call the PSF instance with relevant parameters here
 			science_RGB = np.zeros((self.jpgfile.size[0], self.jpgfile.size[1], 3), "uint8") 
 		
 			randx = np.random.uniform(0.2*self.jpgfile.size[0], 0.8*self.jpgfile.size[0])
@@ -197,17 +194,16 @@ class delsimi(object):
 			sigmay_g = 9.5 + np.random.uniform(0.1,0.2)
 			sigmax_b = 9.0 + np.random.uniform(0.2,0.3)
 			sigmay_b = 9.0 + np.random.uniform(0.1,0.2)
-		
+			
+			# Loop through each pixel of the file:
 			for l1 in range(self.jpgfile.size[0]):
 				for l2 in range(self.jpgfile.size[1]):
 					
 					biaslevel = np.random.normal(self.biasmeanr*4., self.biasstdevr*4.)
-					
-					# TODO: apply integratedGaussian instead
 					sciencer[l1,l2] = (self.master_flat[l1,l2,0]/np.mean(self.master_flat))*biaslevel + 10. + 190.*(np.exp(- ((float(l1) - randx)**2/(2.*sigmax_r**2) + (float(l2) - randy)**2/(2.*sigmax_r**2) ))) 
 					scienceg[l1,l2] = (self.master_flat[l1,l2,1]/np.mean(self.master_flat))*biaslevel + 5. + 190.*(np.exp(- ((float(l1) - randx)**2/(2.*sigmax_g**2) + (float(l2) - randy)**2/(2.*sigmax_g**2) )))
 					scienceb[l1,l2] = (self.master_flat[l1,l2,2]/np.mean(self.master_flat))*biaslevel + 8. + 190.*(np.exp(- ((float(l1) - randx)**2/(2.*sigmax_b**2) + (float(l2) - randy)**2/(2.*sigmax_b**2) )))
-		
+#		
 			science_RGB[:,:,0] = sciencer
 			science_RGB[:,:,1] = scienceg
 			science_RGB[:,:,2] = scienceb
@@ -216,7 +212,18 @@ class delsimi(object):
 
 
 if __name__ == '__main__':
+	# Make delsimi class instance:
 	simtest = delsimi()
+	
+	# Make PSF class instance:
+	# TODO: do not make a PSF instance here, do it in the delsimi class __init__
+	dpsf = PSF(imshape=simtest.jpgfile.size, superres=3)
+	
+	# Evaluate PSF with specified parameters:
+	img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
+			star=[10,15], integrationTime=10, angle=np.pi/7, speed=3, fwhm=1)
+	
+	
 	print('Making bias...')
 	simtest.makebias()
 	print('...done!')
@@ -224,5 +231,5 @@ if __name__ == '__main__':
 	simtest.makeflat()
 	print('...done!')
 	print('Making science...')
-	simtest.makescience()
+	simtest.makescience(img)
 	print('...done!')
