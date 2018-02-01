@@ -26,8 +26,8 @@ class delsimi(object):
 			
 			https://github.com/TESScience/SPyFFI
 			
-		- Smeared PSF with length inferred from satellite speed and exposure time
-		- True pixel sizes / frame size
+		- PSF length inferred from estimated satellite speed and exposure time
+		- True pixel sizes
 		- Simple noise
 		- Focus change
 		- Catalog stars
