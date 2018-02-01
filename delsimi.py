@@ -26,20 +26,20 @@ class delsimi(object):
 			
 			https://github.com/TESScience/SPyFFI
 			
+		- Additional stars
 		- PSF length inferred from estimated satellite speed and exposure time
 		- True pixel sizes
+		- Catalog stars
 		- Simple noise
 		- Focus change
-		- Catalog stars
 		- Jitter
-		- Additional stars
-		- Pixel sensitivity variations?
+		- Pixel sensitivity variations
 		- Background
 		- Photon noise
 		- Readout smear
 		- Saturated pixels
 		- Cosmic rays
-		- Position variable PSF
+		- Position variable PSF (not compatible with convolution)
 		
 		PSF
 		---
