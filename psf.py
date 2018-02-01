@@ -29,6 +29,8 @@ class PSF():
 		self.imshape = np.array(imshape) # shape of image in pixels (row, col)
 		self.superres = superres # subpixel resolution
 
+
+
 	def evaluate(self, star, integrationTime, angle, speed, fwhm = 1, 
 			jitter = False, focus = False):
 		"""
@@ -89,15 +91,15 @@ class PSF():
 		# Interpolate highresImage:
 		highresImageInterp = RectBivariateSpline(PRFrow, PRFcol, highresImage)
 		
-		# Integrate the interpolation in each pixel:
-		# (integration of the spline outside the spline boundaries yield artefacts)
+		# Integrate the interpolation object in each pixel:
+		# (integration of the spline outside the spline boundaries yields artefacts)
 		img = np.zeros(self.imshape, dtype='float64')
 		for row in range(self.imshape[0]):
 			for col in range(self.imshape[1]):
 				# Get star position in PSF(t=0)-based coordinates:
 				row_cen = row - star[0]
 				col_cen = col - star[1]
-				# Determine whether to integrate current pixel value:
+				# Determine whether to integrate current pixel value to avoid artefacts:
 				withinBoundary = highresImageInterp(row_cen, col_cen) > 1e-9
 				if withinBoundary:
 					# Integrate intepolation in the current pixel:
@@ -113,6 +115,14 @@ class PSF():
 		on the CCD. Do this by making a high resolution line that approximates
 		the movement of a star with a certain constant angle and speed across 
 		the CCD during the integrationTime.
+		
+		The buffer is the area around the kernel corresponding to the extent of
+		the PSF. Since the smear kernel array must have the same shape as the 
+		PSF array, this buffer is applied here too.
+		
+		Note that the current implementation only includes line start at 
+		integer subpixel positions. With sufficient oversampling this effect is
+		not expected to change the final star positions significantly.
 		
 		Input
 		-----
@@ -139,7 +149,7 @@ class PSF():
 		r1 = r0 + finalposRow
 		c1 = c0 + finalposCol
 		out = np.zeros([r1+buffer, c1+buffer])
-		# TODO: change implementation to subsubpixel line definition
+		# TODO: change line implementation to subsubpixel line definition
 #		rr, cc = line(r0, c0, r1, c1)
 #		out[rr, cc] = 1
 		rr, cc, val = line_aa(r0, c0, r1, c1)
@@ -177,6 +187,8 @@ class PSF():
 	def highresPSF(self, fwhm):
 		"""
 		Make a subpixel resolution PSF.
+		
+		The PSF is placed at the center of the high resolution array.
 		
 		Input
 		-----
