@@ -40,7 +40,7 @@ class PSF():
 		-----
 		star (array, float)
 			Row and column position in pixels of the star. This corresponds
-			to the star position at the beginning of the exposure.
+			to the star position at the midtime of exposure.
 		integrationTime (float)
 			CCD integration time.
 		angle (float)
@@ -55,11 +55,12 @@ class PSF():
 		(2D array, float)
 			Smeared and pixel-integrated PSF.
 		"""
-		# Define subpixel buffer:
+		# Define subpixel buffer. Needs to be large for correct interpolation:
 		self.buffer = np.int(3*fwhm*self.superres)
 		
 		# Create smear kernel:
-		smearKernel = self.makeSmearKernel(integrationTime, angle, speed, fwhm)
+		smearKernel, r0, c0, r1, c1 = self.makeSmearKernel(
+				integrationTime, angle, speed, fwhm)
 		self.kernelShape = smearKernel.shape
 		
 		# Get highres PSF:
@@ -81,10 +82,6 @@ class PSF():
 		PRFrow = PRFrow - PRFrow.size / 2
 		PRFcol = PRFcol - PRFcol.size / 2
 		
-		# Move center to account for buffer zone and smear length:
-		PRFrow -= self.buffer
-		PRFcol -= self.buffer
-		
 		# Convert from subpixel to pixel resolution:
 		PRFrow /= self.superres
 		PRFcol /= self.superres
@@ -104,9 +101,9 @@ class PSF():
 				withinBoundary = highresImageInterp(row_cen, col_cen) > 1e-9
 				if withinBoundary:
 					# Integrate intepolation in the current pixel:
-					img[row,col] = highresImageInterp.integral(row_cen-0.5, row_cen+0.5, col_cen-0.5, col_cen+0.5)
+					img[row,col] = star[2]*highresImageInterp.integral(row_cen-0.5, row_cen+0.5, col_cen-0.5, col_cen+0.5)
 		
-		return img, smearKernel, PSFhighres, highresImage, highresImageInterp
+		return img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp
 
 
 
@@ -142,35 +139,43 @@ class PSF():
 		(array, float)
 			Interpolated pixel positions of a star.
 		"""
-        
-        # Set buffer around the line in subpixel units:
+		
+		# Set buffer around the line in subpixel units:
 		buffer = self.buffer
-        
-        # Get integer pixel final position coordinates:
-		finalposRow = np.int(self.superres*speed*integrationTime*np.sin(angle))
-		finalposCol = np.int(self.superres*speed*integrationTime*np.cos(angle))
-        
-        # Set starting point (r0,c0):
-		r0 = 0 + buffer
-		c0 = 0 + buffer
-        
-        # Set ending point (r1,c1):
-		r1 = r0 + finalposRow
-		c1 = c0 + finalposCol
-        
-        # Preallocate array in which to draw line:
-		out = np.zeros([r1+buffer, c1+buffer])
-        
-        # Draw line:
-		# TODO: change line implementation to subsubpixel line definition
-        # Non-anti-aliased:
-#		rr, cc = line(r0, c0, r1, c1)
-#		out[rr, cc] = 1
-        # Anti-aliased:
-		rr, cc, val = line_aa(r0, c0, r1, c1)
-		out[rr, cc] = val
-        
-		return out
+		
+		if speed is 0:
+			out = np.zeros([2*buffer+1, 2*buffer+1])
+			out[buffer,buffer] = 1.
+			r0 = buffer
+			c0 = buffer
+			r1 = buffer
+			c1 = buffer
+		else:
+			# Get integer pixel final position coordinates:
+			finalposRow = np.int(self.superres*speed*integrationTime*np.sin(angle))
+			finalposCol = np.int(self.superres*speed*integrationTime*np.cos(angle))
+			
+			# Set starting point (r0,c0):
+			r0 = 0 + buffer -1
+			c0 = 0 + buffer -1
+			
+			# Set ending point (r1,c1):
+			r1 = r0 + finalposRow
+			c1 = c0 + finalposCol
+			
+			# Preallocate array in which to draw line:
+			out = np.zeros([r1+buffer, c1+buffer])
+			
+			# Draw line:
+			# TODO: change line implementation to subsubpixel line definition
+			# Non-anti-aliased:
+	#		rr, cc = line(r0, c0, r1, c1)
+	#		out[rr, cc] = 1
+			# Anti-aliased:
+			rr, cc, val = line_aa(r0, c0, r1, c1)
+			out[rr, cc] = val
+			
+		return out, r0, c0, r1, c1
 
 
 
@@ -225,9 +230,8 @@ class PSF():
 						np.arange(0,self.kernelShape[0]))
 		
 		# Define centroid position:
-		# TODO: fix bug where the starting position changes when the integrationTime changes
-		x_0 = self.kernelShape[1]/2 + 0.5
-		y_0 = self.kernelShape[0]/2 + 0.5
+		x_0 = self.kernelShape[1]/2-0.5
+		y_0 = self.kernelShape[0]/2-0.5
 		
 		# Evaluate PSF on grid with superres increased width:
 		return self.integratedGaussian(X, Y, 1, x_0, y_0, 
@@ -279,14 +283,22 @@ if __name__ == '__main__':
 	import matplotlib.pyplot as plt
 	
 	# Define background:
-	bkg = np.zeros([30,40],dtype=float)
+	bkg = np.zeros([50,80],dtype=float)
 	
 	# Make PSF class instance:
 	dpsf = PSF(imshape=bkg.shape, superres=5)
 	
 	# Evaluate PSF with specified parameters:
+	star = [20.3,20.3,1]
+	integrationTime=1
+	angle=3*np.pi/7
+	speed = 10
+	fwhm = 1
 	img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
-			star=[10,15], integrationTime=5, angle=np.pi/7, speed=3, fwhm=1)
+			star=star, integrationTime=integrationTime, angle=angle, 
+			speed=speed, fwhm=fwhm)
+	
+	print("Buffer is %s subpixels" % dpsf.buffer)
 	
 	# Plot:
 	fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
