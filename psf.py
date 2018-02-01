@@ -105,6 +105,8 @@ class PSF():
 		
 		return img, smearKernel, PSFhighres, highresImage, highresImageInterp
 
+
+
 	def makeSmearKernel(self, integrationTime, angle, speed, fwhm):
 		"""
 		Make a smear kernel that describes the large-scale movement of a star
@@ -144,15 +146,21 @@ class PSF():
 		out[rr, cc] = val
 		return out
 
+
+
 	def makeJitterKernel(self):
 		# TODO: dependent on satellite pitch, yaw, roll
 		# Make spline of parametric curve:
 #		splprep([positions[:,1],positions[:,0]], s=0)
 		pass
 
+
+
 	def makeFocusKernel(self):
 		# TODO: start out by making this a constant blur
 		pass
+
+
 
 	def convolvePSF(self, PSFunconvolved, kernel):
 		"""
@@ -163,6 +171,8 @@ class PSF():
 		Use only the subpixel-resolution PSF for this!
 		"""
 		return convolve2d(PSFunconvolved, kernel, 'same', 'fill', 0)
+
+
 
 	def highresPSF(self, fwhm):
 		"""
@@ -190,6 +200,8 @@ class PSF():
 		# Evaluate PSF on grid with superres increased width:
 		return self.integratedGaussian(X, Y, 1, x_0, y_0, 
 					sigma = self.superres*fwhm/(2*np.sqrt(2*np.log(2))))
+
+
 
 	def integratedGaussian(self, x, y, flux, x_0, y_0, sigma=1):
 		'''
@@ -227,6 +239,8 @@ class PSF():
 			  erf((x - x_0 - 0.5) / (np.sqrt(2) * sigma))) *
 			 (erf((y - y_0 + 0.5) / (np.sqrt(2) * sigma)) -
 			  erf((y - y_0 - 0.5) / (np.sqrt(2) * sigma)))))
+
+
 
 
 if __name__ == '__main__':
