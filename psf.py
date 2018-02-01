@@ -39,13 +39,14 @@ class PSF():
 		Input
 		-----
 		star (array, float)
-			Row and column position in pixels of the star.
+			Row and column position in pixels of the star. This corresponds
+			to the star position at the beginning of the exposure.
 		integrationTime (float)
 			CCD integration time.
 		angle (float)
 			Angle in radians of star CCD movement.
 		speed (float)
-			Speed of star CCD movement.
+			Speed of star CCD movement. Assumed constant.
 		fwhm (float)
 			Full width at half maximum of PSF in pixels.
 		
@@ -55,7 +56,7 @@ class PSF():
 			Smeared and pixel-integrated PSF.
 		"""
 		# Define subpixel buffer:
-		self.buffer = np.int(3*self.superres*fwhm)
+		self.buffer = np.int(3*fwhm*self.superres)
 		
 		# Create smear kernel:
 		smearKernel = self.makeSmearKernel(integrationTime, angle, speed, fwhm)
@@ -67,10 +68,10 @@ class PSF():
 		# TODO: convolve highres PSF with focus and jitter here
 		
 		# Convolve the PSF with the smear kernel:
-		highresImage = self.convolvePSF(PSFhighres, smearKernel)
+		highresConvPSF = self.convolvePSF(PSFhighres, smearKernel)
 		
 		# Normalise the PRF:
-		highresImage /= np.nansum(highresImage) * self.superres**2
+		highresConvPSF /= np.nansum(highresConvPSF) * self.superres**2
 		
 		# Define pixel centered index arrays for the interpolater:
 		PRFrow = np.arange(0.5, self.kernelShape[0] + 0.5)
@@ -80,16 +81,16 @@ class PSF():
 		PRFrow = PRFrow - PRFrow.size / 2
 		PRFcol = PRFcol - PRFcol.size / 2
 		
-		# Move center to account for buffer zone:
-		PRFrow += self.buffer
-		PRFcol += self.buffer
+		# Move center to account for buffer zone and smear length:
+		PRFrow -= self.buffer
+		PRFcol -= self.buffer
 		
 		# Convert from subpixel to pixel resolution:
 		PRFrow /= self.superres
 		PRFcol /= self.superres
 		
 		# Interpolate highresImage:
-		highresImageInterp = RectBivariateSpline(PRFrow, PRFcol, highresImage)
+		highresImageInterp = RectBivariateSpline(PRFrow, PRFcol, highresConvPSF)
 		
 		# Integrate the interpolation object in each pixel:
 		# (integration of the spline outside the spline boundaries yields artefacts)
@@ -194,6 +195,10 @@ class PSF():
 		https://github.com/TESScience/SPyFFI/blob/master/PSF.py
 		
 		Use only the subpixel-resolution PSF for this!
+		
+		Parameters:
+			PSFunconvolved (numpy array) : 2D array with the subpixel PSF.
+			kernel (numpy array) : Kernel with which to convolute.
 		"""
 		return convolve2d(PSFunconvolved, kernel, 'same', 'fill', 0)
 
@@ -277,11 +282,11 @@ if __name__ == '__main__':
 	bkg = np.zeros([30,40],dtype=float)
 	
 	# Make PSF class instance:
-	dpsf = PSF(imshape=bkg.shape, superres=10)
+	dpsf = PSF(imshape=bkg.shape, superres=5)
 	
 	# Evaluate PSF with specified parameters:
 	img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
-			star=[10,15], integrationTime=10, angle=np.pi/7, speed=3, fwhm=1)
+			star=[10,15], integrationTime=5, angle=np.pi/7, speed=3, fwhm=1)
 	
 	# Plot:
 	fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
