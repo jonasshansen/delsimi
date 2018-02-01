@@ -141,19 +141,34 @@ class PSF():
 		(array, float)
 			Interpolated pixel positions of a star.
 		"""
+        
+        # Set buffer around the line in subpixel units:
 		buffer = self.buffer
+        
+        # Get integer pixel final position coordinates:
 		finalposRow = np.int(self.superres*speed*integrationTime*np.sin(angle))
 		finalposCol = np.int(self.superres*speed*integrationTime*np.cos(angle))
+        
+        # Set starting point (r0,c0):
 		r0 = 0 + buffer
 		c0 = 0 + buffer
+        
+        # Set ending point (r1,c1):
 		r1 = r0 + finalposRow
 		c1 = c0 + finalposCol
+        
+        # Preallocate array in which to draw line:
 		out = np.zeros([r1+buffer, c1+buffer])
+        
+        # Draw line:
 		# TODO: change line implementation to subsubpixel line definition
+        # Non-anti-aliased:
 #		rr, cc = line(r0, c0, r1, c1)
 #		out[rr, cc] = 1
+        # Anti-aliased:
 		rr, cc, val = line_aa(r0, c0, r1, c1)
 		out[rr, cc] = val
+        
 		return out
 
 
