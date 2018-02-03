@@ -77,7 +77,16 @@ class delsimi(object):
 		# Set size in pixels to Delphini's CCD size, Aptina MT9T031 1/2" (4:3):
 		self.ccdshape = np.array([1536,2048])
 		
+		# Set pixel size in arcseconds:
+		self.pixel_scale = 42 # TODO: get correct pixel scale
 		
+		# Apply binning of Bayer pixels following the method linked to below:
+		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
+		row_bin = 2
+		col_bin = 2
+		img_view = img.reshape(img.shape[0] // row_bin, row_bin,
+							img.shape[1] // col_bin, col_bin)
+		img_binned = img_view.sum(axis=3).sum(axis=1)
 		
 		# Load catalog here:
 		
@@ -94,13 +103,6 @@ class delsimi(object):
 			dpsf.evaluate(star=star, integrationTime=self.integrationTime,
 				angle=angle, speed=speed, fwhm=fwhm)
 		
-		# Apply binning:
-		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
-		row_bin = 2
-		col_bin = 2
-		img_view = img.reshape(img.shape[0] // row_bin, row_bin,
-							img.shape[1] // col_bin, col_bin)
-		img_binned = img_view.sum(axis=1).sum(axis=3)
 		
 		
 if __name__ == '__main__':
