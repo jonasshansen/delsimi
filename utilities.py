@@ -7,4 +7,8 @@ Utilities for the delsimi simulation code.
 """
 
 # TODO: create function to convert RGB to Johnson filters and back
-#https://www.sciencedirect.com/science/article/pii/S0273117715005694?via%3Dihub
+def uvb2rgb(uvb):
+	# Assume the following conversion applies to space photometry
+	#https://www.sciencedirect.com/science/article/pii/S0273117715005694?via%3Dihub
+	rgb = uvb
+	return rgb
