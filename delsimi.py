@@ -37,6 +37,7 @@ class delsimi(object):
 		- Background
 		- Photon noise
 		- Readout smear
+		- Rolling shutter
 		- Saturated pixels
 		- Cosmic rays
 		- Position variable PSF (not compatible with convolution)
@@ -45,6 +46,15 @@ class delsimi(object):
 		---
 		For the point spread function (PSF) a Gaussian is applied. This is an
 		approximation.
+		
+		Sensor
+		------
+		The Delphini-1 sensor is an Aptina MT9T031 1/2" (4:3) CMOS Bayer 
+		pattern sensor. Thus, each pixel has a colour filter. Binning is 
+		applied to convert the Bayer pattern pixels to greyscale. Four pixels,
+		red, blue and two green, are summed to yield one greyscale pixel. This
+		binning is implemented in the code, assuming no cromatic abberation, 
+		which changes the PSF based on wavelength.
 		
 		MTF
 		---
