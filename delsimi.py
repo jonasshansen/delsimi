@@ -90,13 +90,6 @@ class delsimi(object):
 		# Set pixel size in arcseconds:
 		self.pixel_scale = 42 # TODO: get correct pixel scale
 		
-		# Apply binning of Bayer pixels following the method linked to below:
-		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
-		row_bin = 2
-		col_bin = 2
-		img_view = img.reshape(img.shape[0] // row_bin, row_bin,
-							img.shape[1] // col_bin, col_bin)
-		img_binned = img_view.sum(axis=3).sum(axis=1)
 		
 		# Load catalog here:
 		
@@ -113,8 +106,16 @@ class delsimi(object):
 			dpsf.evaluate(star=star, integrationTime=self.integrationTime,
 				angle=angle, speed=speed, fwhm=fwhm)
 		
-		
-		
+		# Apply binning of Bayer pixels following the method linked to below:
+		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
+		row_bin = 2
+		col_bin = 2
+		img_view = img.reshape(img.shape[0] // row_bin, row_bin,
+							img.shape[1] // col_bin, col_bin)
+		img_binned = img_view.sum(axis=3).sum(axis=1)
+
+
+
 if __name__ == '__main__':
 	# Make delsimi class instance:
 	simtest = delsimi()
@@ -128,12 +129,3 @@ if __name__ == '__main__':
 			star=[10,15], integrationTime=10, angle=np.pi/7, speed=3, fwhm=1)
 	
 	
-	print('Making bias...')
-	simtest.makebias()
-	print('...done!')
-	print('Making flat...')
-	simtest.makeflat()
-	print('...done!')
-	print('Making science...')
-	simtest.makescience(img)
-	print('...done!')
