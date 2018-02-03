@@ -10,7 +10,8 @@ from psf import PSF
 
 
 class delsimi(object):
-	def __init__(self, integrationTime = 30.0):
+	def __init__(self, input_dir='../infiles',
+					output_dir='../outfiles', integrationTime = 30.0):
 		"""
 		Simulate stellar images from Delphini-1.
 		
@@ -80,23 +81,22 @@ class delsimi(object):
 		https://github.com/jonasshansen/delsimi
 		"""
 		self.integrationTime = integrationTime
-		
-		self.infiledir = "../infiles"
-		self.outfiledir = "../outfiles"
-		
+
+		self.input_dir = input_dir
+		self.output_dir = output_dir
+
 		# Set size in pixels to Delphini's CCD size, Aptina MT9T031 1/2" (4:3):
 		self.ccdshape = np.array([1536,2048])
-		
+
 		# Set pixel size in arcseconds:
 		self.pixel_scale = 42 # TODO: get correct pixel scale
-		
-		
+
 		# Load catalog here:
 		
-		
+
 		# Instantiate PSF class:
 		dpsf = PSF(imshape=self.ccdshape, superres=10)
-		
+
 		# Evaluate PSF class:
 		star_row = 20
 		star_col = 20
@@ -105,7 +105,7 @@ class delsimi(object):
 		img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp = \
 			dpsf.evaluate(star=star, integrationTime=self.integrationTime,
 				angle=angle, speed=speed, fwhm=fwhm)
-		
+
 		# Apply binning of Bayer pixels following the method linked to below:
 		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
 		row_bin = 2
@@ -114,6 +114,11 @@ class delsimi(object):
 							img.shape[1] // col_bin, col_bin)
 		img_binned = img_view.sum(axis=3).sum(axis=1)
 
+
+
+
+		# Save data to fits file:
+		
 
 
 if __name__ == '__main__':
