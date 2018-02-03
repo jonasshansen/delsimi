@@ -6,7 +6,7 @@ from skimage.draw import line_aa
 #from scipy.interpolate import splprep
 
 class PSF():
-	def __init__(self, imshape, superres = 10):
+	def __init__(self, imshape, superres = 10, rgb_filter = 'bggr'):
 		"""
 		Approximate the PSF in stellar images from Delphini-1.
 		
@@ -28,6 +28,7 @@ class PSF():
 		"""
 		self.imshape = np.array(imshape) # shape of image in pixels (row, col)
 		self.superres = superres # subpixel resolution
+		self.rgb_filter = rgb_filter
 
 
 
@@ -88,6 +89,8 @@ class PSF():
 		
 		# Interpolate highresImage:
 		highresImageInterp = RectBivariateSpline(PRFrow, PRFcol, highresConvPSF)
+		
+		# TODO: apply Bayer filter scaling in the loop below, add color to params
 		
 		# Integrate the interpolation object in each pixel:
 		# (integration of the spline outside the spline boundaries yields artefacts)
@@ -286,12 +289,12 @@ if __name__ == '__main__':
 	bkg = np.zeros([50,80],dtype=float)
 	
 	# Make PSF class instance:
-	dpsf = PSF(imshape=bkg.shape, superres=5)
+	dpsf = PSF(imshape=bkg.shape, superres=10)
 	
 	# Evaluate PSF with specified parameters:
-	star = [20.3,20.3,1]
-	integrationTime=1
-	angle=3*np.pi/7
+	star = [20,20,1]
+	integrationTime=3
+	angle=np.pi/7
 	speed = 10
 	fwhm = 1
 	img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
