@@ -6,8 +6,12 @@ from PIL import Image
 import os
 import numpy as np
 import scipy
-from psf import PSF
+from astropy.io import fits
+from astropy.table import Table, Column
+from astropy.wcs import WCS
 
+from utilities import uvb2rgb
+from psf import PSF
 
 class delsimi(object):
 	def __init__(self, input_dir='../infiles',
@@ -94,6 +98,22 @@ class delsimi(object):
 		# Load catalog here:
 		
 
+		# Collect star parameters in list for catalog:
+		cat = [starids, starrows, starcols, mag_u, mag_v, mag_b]
+
+		# Make astropy table with catalog:
+		return Table(
+			cat,
+			names=('starid', 'row', 'col', 'starmag'),
+			dtype=('int64', 'float64', 'float64', 'float32')
+		)
+
+		# Convert Johnson filters to RGB colors:
+		mag_r, mag_b, mag_g = uvb2rgb([mag_u, mag_v, mag_b])
+		starmag = [mag_r, mag_b, mag_g]
+
+
+
 		# Instantiate PSF class:
 		dpsf = PSF(imshape=self.ccdshape, superres=10)
 
@@ -113,9 +133,6 @@ class delsimi(object):
 		img_view = img.reshape(img.shape[0] // row_bin, row_bin,
 							img.shape[1] // col_bin, col_bin)
 		img_binned = img_view.sum(axis=3).sum(axis=1)
-
-
-
 
 		# Save data to fits file:
 		
