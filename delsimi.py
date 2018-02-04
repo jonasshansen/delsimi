@@ -108,9 +108,12 @@ class delsimi(object):
 			dtype=('int64', 'float64', 'float64', 'float32')
 		)
 
+		# Convert magnitudes to flux:
+		# TODO: requires absolute scaling only obtainable from photograph
+
 		# Convert Johnson filters to RGB colors:
-		mag_r, mag_b, mag_g = uvb2rgb([mag_u, mag_v, mag_b])
-		starmag = [mag_r, mag_b, mag_g]
+		flux_r, flux_b, flux_g = uvb2rgb([flux_u, flux_v, flux_b])
+		star_flux = [flux_r, flux_b, flux_g]
 
 
 
