@@ -39,8 +39,8 @@ class PSF():
 		"""
 		Evaluate a PSF that is smeared in one direction.
 		
-		Input
-		-----
+		Parameters
+		----------
 		star (array, float)
 			Row and column position in pixels of the star. This corresponds
 			to the star position at the midtime of exposure.
@@ -53,10 +53,18 @@ class PSF():
 		fwhm (float)
 			Full width at half maximum of PSF in pixels.
 		
-		Output
-		------
-		(2D array, float)
-			Smeared and pixel-integrated PSF.
+		Returns
+		-------
+		img (2D array, float):
+			Smeared, pixel-integrated and Bayer filter scaled PSF.
+		smearKernel (2D array, float):
+			Kernel with a line that specifies the smear of a single PSF.
+		PSFhighres (2D array, float):
+			Subpixel resolution PSF that is convolved with the smear kernel.
+		highresConvPSF (2D array, float):
+			Normalised convolution of smear kernel and subpixel resolution PSF.
+		highresImageInterp (interpolation object):
+			Interpolated smeared PSF. Can be integrated efficiently.
 		"""
 		# Define subpixel buffer. Needs to be large for correct interpolation:
 		self.buffer = np.int(3*fwhm*self.superres)
@@ -128,8 +136,8 @@ class PSF():
 		integer subpixel positions. With sufficient oversampling this effect is
 		not expected to change the final star positions significantly.
 		
-		Input
-		-----
+		Parameters
+		----------
 		integrationTime (float)
 			CCD integration time.
 		angle (float)
@@ -140,8 +148,8 @@ class PSF():
 			Full width at half maximum of PSF. Used to determine buffer pixels
 			around the line.
 		
-		Output
-		------
+		Returns
+		-------
 		(array, float)
 			Interpolated pixel positions of a star.
 		"""
@@ -207,9 +215,12 @@ class PSF():
 		
 		Use only the subpixel-resolution PSF for this!
 		
-		Parameters:
-			PSFunconvolved (numpy array) : 2D array with the subpixel PSF.
-			kernel (numpy array) : Kernel with which to convolute.
+		Parameters
+		----------
+		PSFunconvolved (numpy array): 
+			2D array with the subpixel PSF.
+		kernel (numpy array): 
+			Kernel with which to convolute.
 		"""
 		return convolve2d(PSFunconvolved, kernel, 'same', 'fill', 0)
 
@@ -221,13 +232,13 @@ class PSF():
 		
 		The PSF is placed at the center of the high resolution array.
 		
-		Input
-		-----
+		Parameters
+		----------
 		fwhm (float)
 			Full width at half maximum of Gaussian PSF in pixels.
 		
-		Output
-		------
+		Returns
+		-------
 		(2D array, float)
 			Subpixel-resolution PSF.
 		"""
@@ -249,18 +260,28 @@ class PSF():
 		'''
 		Evaluate a 2D symmetrical Gaussian integrated in pixels.
 		
-		Parameters:
-			x (numpy array) : x coordinates at which to evaluate the PSF.
-			y (numpy array) : y coordinates at which to evaluate the PSF.
-			flux (float) : Integrated value.
-			x_0 (float) : Centroid position.
-			y_0 (float) : Centroid position.
-			sigma (float, optional) : Standard deviation of Gaussian. Default=1.
+		Parameters
+		----------
+		x (numpy array): 
+			x coordinates at which to evaluate the PSF.
+		y (numpy array): 
+			y coordinates at which to evaluate the PSF.
+		flux (float): 
+			Integrated value.
+		x_0 (float): 
+			Centroid position.
+		y_0 (float): 
+			Centroid position.
+		sigma (float, optional): 
+			Standard deviation of Gaussian. Default=1.
 		
-		Returns:
-			numpy array : 2D Gaussian integrated pixel values at (x,y).
+		Returns
+		-------
+		numpy array: 
+			2D Gaussian integrated pixel values at (x,y).
 		
-		Example:
+		Example
+		-------
 		
 		>>> import numpy as np
 		>>> X, Y = np.meshgrid(np.arange(-1,2), np.arange(-1,2))
@@ -269,12 +290,13 @@ class PSF():
 			[ 0.92564571,  1.46631496,  0.92564571],
 			[ 0.58433556,  0.92564571,  0.58433556]])
 		
-		Code Author:
-			Documentation: Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
-			
-			Code: 
-			https://github.com/astropy/photutils/blob/master/photutils/psf/models.py
-			(IntegratedGaussianPRF)
+		Code Author
+		-----------
+		Documentation: Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
+		
+		Code: 
+		https://github.com/astropy/photutils/blob/master/photutils/psf/models.py
+		(IntegratedGaussianPRF)
 		'''
 		return (flux / 4 *
 			((erf((x - x_0 + 0.5) / (np.sqrt(2) * sigma)) -

@@ -19,8 +19,8 @@ class delsimi(object):
 		"""
 		Simulate stellar images from Delphini-1.
 		
-		Input
-		-----
+		Parameters
+		----------
 		integrationTime (float)
 			CCD integration time in seconds. Default is 30 seconds.
 		

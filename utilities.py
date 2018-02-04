@@ -26,6 +26,10 @@ def bayer_scaling(img, flux):
 		2D image with an even number of rows and columns.
 	flux (list of floats):
 		List with the three values for red, green and blue to scale image.
+	
+	Returns:
+	img (numpy array):
+		2D image like the input, but with Bayer filter scaled values.
 	"""
 	# Red:
 	img[1::2,1::2] *= flux[0]
