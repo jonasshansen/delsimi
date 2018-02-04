@@ -5,6 +5,8 @@ from scipy.interpolate import RectBivariateSpline
 from skimage.draw import line_aa
 #from scipy.interpolate import splprep
 
+from utilities import bayer_scaling
+
 class PSF():
 	def __init__(self, imshape, superres = 10, rgb_filter = 'bggr'):
 		"""
@@ -93,19 +95,20 @@ class PSF():
 		# TODO: apply Bayer filter scaling in the loop below, add color to params
 		
 		# Integrate the interpolation object in each pixel:
-		# (integration of the spline outside the spline boundaries yields artefacts)
 		img = np.zeros(self.imshape, dtype='float64')
 		for row in range(self.imshape[0]):
 			for col in range(self.imshape[1]):
 				# Get star position in PSF(t=0)-based coordinates:
 				row_cen = row - star[0]
 				col_cen = col - star[1]
-				# Determine whether to integrate current pixel value to avoid artefacts:
+				# Integrate only significant contributions to avoid artefacts:
 				withinBoundary = highresImageInterp(row_cen, col_cen) > 1e-9
 				if withinBoundary:
-					# Integrate intepolation in the current pixel:
-					img[row,col] = star[2]*highresImageInterp.integral(row_cen-0.5, row_cen+0.5, col_cen-0.5, col_cen+0.5)
-		
+					# Integrate normalised interpolation in the current pixel:
+					img[row,col] = highresImageInterp.integral(row_cen-0.5, row_cen+0.5, col_cen-0.5, col_cen+0.5)
+					# Apply Bayer filter flux scaling:
+					img = bayer_scaling(img, star[2])
+
 		return img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp
 
 
