@@ -139,7 +139,10 @@ class delsimi(object):
 		img_binned = img_view.sum(axis=3).sum(axis=1)
 
 		# Save data to fits file:
-		
+		# TODO
+
+		# Save catalog to file:
+		# TODO
 
 
 if __name__ == '__main__':
