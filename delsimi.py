@@ -99,7 +99,7 @@ class delsimi(object):
 		
 
 		# Collect star parameters in list for catalog:
-		cat = [starids, starrows, starcols, mag_u, mag_v, mag_b]
+		cat = [starids, starrows, starcols, mag_b, mag_v, mag_r]
 
 		# Make astropy table with catalog:
 		return Table(
@@ -113,7 +113,7 @@ class delsimi(object):
 		# TODO: add uvb fluxes to catalog
 
 		# Convert Johnson filters to RGB colors:
-		flux_r, flux_b, flux_g = uvb2rgb([flux_u, flux_v, flux_b])
+		flux_r, flux_b, flux_g = bvr2rgb([flux_b, flux_v, flux_r])
 		star_flux = [flux_r, flux_b, flux_g]
 
 		# TODO: add rgb fluxes to catalog
