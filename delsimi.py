@@ -130,6 +130,8 @@ class delsimi(object):
 			dpsf.evaluate(star=star, integrationTime=self.integrationTime,
 				angle=angle, speed=speed, fwhm=fwhm)
 
+		# TODO: Add white noise to image:
+
 		# Apply binning of Bayer pixels following the method linked to below:
 		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
 		row_bin = 2
