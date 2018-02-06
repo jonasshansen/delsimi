@@ -20,10 +20,10 @@ class delsimi(object):
 					integrationTime=30.0):
 		"""
 		Simulate stellar images from Delphini-1.
-		
+
 		It is assumed that the camera pointing is orthogonal to the tangent of
 		the orbit.
-		
+
 		Parameters
 		----------
 		input_dir (string):
@@ -35,7 +35,7 @@ class delsimi(object):
 			exposure.
 		integrationTime (float):
 			CCD integration time in seconds. Default is 30 seconds.
-		
+
 		Future Extensions
 		-----------------
 		This is a list of possible future extensions to this code. The list is
@@ -60,12 +60,12 @@ class delsimi(object):
 		- Saturated pixels
 		- Cosmic rays
 		- Position variable PSF (not compatible with convolution)
-		
+
 		PSF
 		---
 		For the point spread function (PSF) a Gaussian is applied. This is an
 		approximation.
-		
+
 		Sensor
 		------
 		The Delphini-1 sensor is an Aptina MT9T031 1/2" (4:3) CMOS Bayer 
@@ -74,30 +74,21 @@ class delsimi(object):
 		red, blue and two green, are summed to yield one greyscale pixel. This
 		binning is implemented in the code, assuming no cromatic abberation, 
 		which changes the PSF based on wavelength.
-		
-		MTF
-		---
-		# TODO: is this correct?
-		The Modulation transfer function (MTF) is a description of both jitter
-		(high temporal frequency compared to exposure time) and smear (low
-		temporal frequency compared to exposure time). It ferciliates the 
-		simulation of movement during CCD integration. Thus the smear caused
-		by the orbital motion of the satellite as well as possible jitter can
-		be included in the simulation.
-		NOTE: This is currently not implemented.
-		
+
+
 		Code Authors
 		------------
 		Carolina von Essen, cessen@phys.au.dk (base code, see first commit on
 		Github)
-		
+
 		Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com (extensions, see all
 		but the first commit on Github)
-		
+
 		Online Repository
 		-----------------
 		https://github.com/jonasshansen/delsimi
 		"""
+
 		self.integrationTime = integrationTime
 
 		self.input_dir = input_dir
