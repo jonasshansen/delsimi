@@ -104,13 +104,18 @@ class delsimi(object):
 		self.output_dir = output_dir
 
 		# Set size in pixels to Delphini's CCD size, Aptina MT9T031 1/2" (4:3):
-		self.ccdshape = np.array([1536,2048])
+		self.ccd_shape = np.array([1536,2048])
 
-		# Set pixel size in arcseconds:
-		self.pixel_scale = 42 # TODO: get correct pixel scale
+		# Set pixel scale in arcseconds:
+		pixel_size = 3.2 # micrometer
+		focal_length = 35 # millimeter
+		conv_const = 206.265 # convert micrometer to mm and radians to arcsec
+		self.pixel_scale = pixel_size / focal_length * conv_const # arcsec/pixel
 
-		# Load catalog here:
+		# TODO: Load catalog here:
 		
+
+		# TODO: WCS conversion from (ra,dec) to pixel (row,col):
 
 		# Collect star parameters in list for catalog:
 		cat = [starids, starrows, starcols, mag_b, mag_v, mag_r]
@@ -133,7 +138,7 @@ class delsimi(object):
 		# TODO: add rgb fluxes to catalog
 
 		# Instantiate PSF class:
-		dpsf = PSF(imshape=self.ccdshape, superres=10)
+		dpsf = PSF(imshape=self.ccd_shape, superres=10)
 
 		# Evaluate PSF class:
 		star_row = 20
