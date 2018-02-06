@@ -15,13 +15,25 @@ from psf import PSF
 
 class delsimi(object):
 	def __init__(self, input_dir='../infiles',
-					output_dir='../outfiles', integrationTime = 30.0):
+					output_dir='../outfiles',
+					coord_cen=[0.,0.],
+					integrationTime=30.0):
 		"""
 		Simulate stellar images from Delphini-1.
 		
+		It is assumed that the camera pointing is orthogonal to the tangent of
+		the orbit.
+		
 		Parameters
 		----------
-		integrationTime (float)
+		input_dir (string):
+			Input file directory. Default is ``'../infiles'``.
+		output_dir (string):
+			Output file directory. Default is ``'../outfiles'``.
+		coord_cen (list of floats):
+			Right ascension and declination coordinate center at the midtime of
+			exposure.
+		integrationTime (float):
 			CCD integration time in seconds. Default is 30 seconds.
 		
 		Future Extensions
