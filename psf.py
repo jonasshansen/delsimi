@@ -34,10 +34,10 @@ class PSF():
 
 
 
-	def evaluate(self, star, integrationTime, angle, speed, fwhm = 1, 
+	def integrate_to_image(self, star, integrationTime, angle, speed, fwhm = 1, 
 			jitter = False, focus = False):
 		"""
-		Evaluate a PSF that is smeared in one direction.
+		Integrate a PSF that is smeared in one direction to an image.
 		
 		Parameters
 		----------
