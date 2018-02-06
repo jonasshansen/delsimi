@@ -37,7 +37,7 @@ class PSF():
 
 
 
-	def integrate_to_image(self, star, integrationTime, angle, speed, fwhm = 1, 
+	def integrate_to_image(self, star, integration_time, angle, speed, fwhm = 1, 
 			jitter = False, focus = False):
 		"""
 		Integrate a PSF that is smeared in one direction to an image.
@@ -47,7 +47,7 @@ class PSF():
 		star (array, float)
 			Row and column position in pixels of the star. This corresponds
 			to the star position at the midtime of exposure.
-		integrationTime (float)
+		integration_time (float)
 			CCD integration time.
 		angle (float)
 			Angle in radians of star CCD movement.
@@ -74,7 +74,7 @@ class PSF():
 		
 		# Create smear kernel:
 		smearKernel, r0, c0, r1, c1 = self.makeSmearKernel(
-				integrationTime, angle, speed, fwhm)
+				integration_time, angle, speed, fwhm)
 		self.kernelShape = smearKernel.shape
 		
 		# Get highres PSF:
@@ -124,7 +124,7 @@ class PSF():
 
 
 
-	def makeSmearKernel(self, integrationTime, angle, speed, fwhm):
+	def makeSmearKernel(self, integration_time, angle, speed, fwhm):
 		"""
 		Make a smear kernel that describes the large-scale movement of a star
 		on the CCD. Do this by making a high resolution line that approximates
@@ -141,7 +141,7 @@ class PSF():
 		
 		Parameters
 		----------
-		integrationTime (float)
+		integration_time (float)
 			CCD integration time.
 		angle (float)
 			Angle in radians of star CCD movement.
@@ -169,8 +169,8 @@ class PSF():
 			c1 = buffer
 		else:
 			# Get integer pixel final position coordinates:
-			finalposRow = np.int(self.superres*speed*integrationTime*np.sin(angle))
-			finalposCol = np.int(self.superres*speed*integrationTime*np.cos(angle))
+			finalposRow = np.int(self.superres*speed*integration_time*np.sin(angle))
+			finalposCol = np.int(self.superres*speed*integration_time*np.cos(angle))
 			
 			# Set starting point (r0,c0):
 			r0 = 0 + buffer -1
