@@ -28,6 +28,7 @@ def bayer_scaling(img, flux):
 		List with the three values for red, green and blue to scale image.
 	
 	Returns:
+	--------
 	img (numpy array):
 		2D image like the input, but with Bayer filter scaled values.
 	"""
@@ -39,3 +40,22 @@ def bayer_scaling(img, flux):
 	# Blue:
 	img[0::2,0::2] *= flux[2]
 	return img
+
+
+def mag2flux(mag):
+	"""
+	Convert from magnitude to flux using scaling relation from
+	aperture photometry for the TESS satellite. This is an estimate.
+
+	Parameters:
+	-----------
+	mag (float): 
+		Magnitude in TESS band.
+
+	Returns:
+	--------
+	float: 
+		Corresponding flux value.
+	"""
+	return 10**(-0.4*(mag - 28.24))
+
