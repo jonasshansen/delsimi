@@ -121,16 +121,16 @@ class delsimi(object):
 			dtype=('int64', 'float64', 'float64', 'float32', 'float32', 'float32')
 		)
 
-		# Convert magnitudes to flux:
-		# TODO: requires absolute scaling only obtainable from photograph
-		# TODO: add uvb fluxes to catalog
-
-		# Convert Johnson filters to RGB colors:
-		rgb = bvr2rgb(bvr)
-#		flux_r, flux_b, flux_g = bvr2rgb(np.array([flux_b, flux_v, flux_r]))
-		star_flux = rgb
-
-		# TODO: add rgb fluxes to catalog
+		for star in cat:
+			# Convert Johnson filters to RGB colors:
+			rgb = bvr2rgb(bvr)
+	#		flux_r, flux_b, flux_g = bvr2rgb(np.array([flux_b, flux_v, flux_r]))
+			star_flux = rgb
+	
+			# Convert magnitudes to flux:
+			mag2flux(star_flux)
+			# TODO: requires absolute scaling only obtainable from photograph
+			# TODO: add rgb fluxes to catalog
 
 		# Instantiate PSF class:
 		dpsf = PSF(imshape=self.ccd_shape, superres=10)
