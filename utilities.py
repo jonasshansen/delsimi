@@ -6,11 +6,71 @@ Utilities for the delsimi simulation code.
 @author: jonas
 """
 
+import numpy as np
+
+
 # TODO: create function to convert RGB to Johnson filters and back
 def bvr2rgb(bvr):
-	# Assume the following conversion applies to space photometry
-	#https://www.sciencedirect.com/science/article/pii/S0273117715005694?via%3Dihub
-	rgb = bvr
+	"""
+	Convert Johnson-Cousins B, V and R magnitudes to RGB magnitudes using the
+	inversed conversion algortihm from Park (2016).
+
+	Equations (1)-(3) in Park (2016) provide the conversion from RGB to BVR.
+	Here, these equations are used in their matrix representation
+		$$Ab+c=x,$$
+	where A is the matrix of constants, b is the RGB vector, c is a vector of
+	constants and x is the BVR vector. The matrix A is then inverted and the 
+	solution vector for the conversion from BVR to RGB is given as
+		$$b = A^{-1} (x-c)$$
+
+	The constants used here are taken from the Park (2016), Table 2, 2nd sigma-
+	clipping. We use these values in the knowledge that they are found using 
+	both a different camera system and with ground based photometry besides 
+	being based on observations of a single open cluster, IC4665. However,
+	they serve as a rough estimate, and if desired realistic constant could be
+	optained from measurements.
+	
+	The article Park (2016) with the title "Photometric transformation from RGB 
+	Bayer filter system to Johnson–Cousins BVR filter system" can be found here:
+	https://www.sciencedirect.com/science/article/pii/S0273117715005694?via%3Dihub
+
+	Parameters
+	----------
+	bvr (numpy array):
+		Array with Johnson-Cousins B, V and R magnitudes: [B,V,R].
+
+	Returns
+	-------
+	rgb (numpy array):
+		Array with converted RGB magnitudes: [R,G,B]
+
+	Code Authors
+	------------
+	Andreas Kjær Dideriksen
+	Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
+	"""
+
+	# Set constant values from the Park (2016):
+	C_BBG = 0.280
+	C_BGR = 0.600
+	C_VBG = 0.542
+	C_VGR = -0.064
+	C_RBG = 0.051
+	C_RGR = 0.468
+	B_BZP = -0.291
+	G_BZP = -0.252
+	R_BZP = -0.226
+	A = np.array([[1+C_BBG, -C_BBG+C_BGR, -C_BGR],
+				[C_VBG, 1-C_VBG+C_VGR, -C_VGR],
+				[C_RBG, -C_RBG+C_RGR, 1-C_RGR]])
+	C = np.array([B_BZP, G_BZP, R_BZP])
+	
+	# Invert matrix:
+	A_inv = np.linalg.inv(A)
+	
+	# Get rgb values:
+	rgb = A_inv.dot(bvr - C)
+	
 	return rgb
 
 
