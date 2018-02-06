@@ -10,7 +10,7 @@ import numpy as np
 
 
 # TODO: create function to convert RGB to Johnson filters and back
-def bvr2rgb(bvr):
+def bvr2rgb(bvr, A_inv=None, C=None):
 	"""
 	Convert Johnson-Cousins B, V and R magnitudes to RGB magnitudes using the
 	inversed conversion algortihm from Park (2016).
@@ -18,9 +18,9 @@ def bvr2rgb(bvr):
 	Equations (1)-(3) in Park (2016) provide the conversion from RGB to BVR.
 	Here, these equations are used in their matrix representation
 		$$Ab+c=x,$$
-	where A is the matrix of constants, b is the RGB vector, c is a vector of
-	constants and x is the BVR vector. The matrix A is then inverted and the 
-	solution vector for the conversion from BVR to RGB is given as
+	where `A` is the matrix of constants, `b` is the RGB vector, `c` is a vector 
+	of constants and `x` is the BVR vector. The matrix `A` is then inverted and 
+	the solution vector for the conversion from BVR to RGB is given as
 		$$b = A^{-1} (x-c)$$
 
 	The constants used here are taken from the Park (2016), Table 2, 2nd sigma-
@@ -38,6 +38,12 @@ def bvr2rgb(bvr):
 	----------
 	bvr (numpy array):
 		Array with Johnson-Cousins B, V and R magnitudes: [B,V,R].
+	A_inv (numpy array):
+		Inverted constants matrix. Default is ``None``, which will create 
+		``A_inv`` from scratch.
+	C (numpy array):
+		Constants vector. Default is ``None``, which will create ``C`` from 
+		scratch.
 
 	Returns
 	-------
@@ -49,29 +55,36 @@ def bvr2rgb(bvr):
 	Andreas Kjær Dideriksen
 	Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
 	"""
+	
+	if A_inv is None:
+		# Set constant values from the Park (2016):
+		C_BBG = 0.280
+		C_BGR = 0.600
+		C_VBG = 0.542
+		C_VGR = -0.064
+		C_RBG = 0.051
+		C_RGR = 0.468
+		
+		# Define matrix:
+		A = np.array([[1+C_BBG, -C_BBG+C_BGR, -C_BGR],
+					[C_VBG, 1-C_VBG+C_VGR, -C_VGR],
+					[C_RBG, -C_RBG+C_RGR, 1-C_RGR]])
+	
+		# Invert matrix:
+		A_inv = np.linalg.inv(A)
+		
+	if C is None:
+		# Set constant values from the Park (2016):
+		B_BZP = -0.291
+		G_BZP = -0.252
+		R_BZP = -0.226
+		
+		# Define vector:
+		C = np.array([B_BZP, G_BZP, R_BZP])
+	
+	# Calculate and return rgb values:
+	return A_inv.dot(bvr - C)
 
-	# Set constant values from the Park (2016):
-	C_BBG = 0.280
-	C_BGR = 0.600
-	C_VBG = 0.542
-	C_VGR = -0.064
-	C_RBG = 0.051
-	C_RGR = 0.468
-	B_BZP = -0.291
-	G_BZP = -0.252
-	R_BZP = -0.226
-	A = np.array([[1+C_BBG, -C_BBG+C_BGR, -C_BGR],
-				[C_VBG, 1-C_VBG+C_VGR, -C_VGR],
-				[C_RBG, -C_RBG+C_RGR, 1-C_RGR]])
-	C = np.array([B_BZP, G_BZP, R_BZP])
-	
-	# Invert matrix:
-	A_inv = np.linalg.inv(A)
-	
-	# Get rgb values:
-	rgb = A_inv.dot(bvr - C)
-	
-	return rgb
 
 
 def bayer_scaling(img, flux):
@@ -80,15 +93,15 @@ def bayer_scaling(img, flux):
 	
 	The Bayer pattern used here is BGGR.
 	
-	Parameters:
-	-----------
+	Parameters
+	----------
 	img (numpy array):
 		2D image with an even number of rows and columns.
 	flux (list of floats):
 		List with the three values for red, green and blue to scale image.
 	
-	Returns:
-	--------
+	Returns
+	-------
 	img (numpy array):
 		2D image like the input, but with Bayer filter scaled values.
 	"""
@@ -102,18 +115,19 @@ def bayer_scaling(img, flux):
 	return img
 
 
+
 def mag2flux(mag):
 	"""
 	Convert from magnitude to flux using scaling relation from
 	aperture photometry for the TESS satellite. This is an estimate.
 
-	Parameters:
-	-----------
+	Parameters
+	----------
 	mag (float): 
 		Magnitude in TESS band.
 
-	Returns:
-	--------
+	Returns
+	-------
 	float: 
 		Corresponding flux value.
 	"""
