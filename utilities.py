@@ -8,8 +8,7 @@ Utilities for the delsimi simulation code.
 
 import numpy as np
 
-
-# TODO: create function to convert RGB to Johnson filters and back
+# TODO: make a sanity test on bvr2rgb output
 def bvr2rgb(bvr, A_inv=None, C=None):
 	"""
 	Convert Johnson-Cousins B, V and R magnitudes to RGB magnitudes using the
