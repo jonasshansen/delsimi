@@ -39,6 +39,8 @@ class delsimi(object):
 		- Focus change
 		- Jitter
 		- Pixel sensitivity variations
+		- Realistic constant used for magnitude to flux conversion (color dependent)
+		- Realistic Johnson-Cousins BVR to RGB magnitude conversion constants
 		- Background
 		- Photon noise
 		- Readout smear
