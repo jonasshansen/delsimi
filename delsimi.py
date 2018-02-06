@@ -155,7 +155,40 @@ class delsimi(object):
 		img_binned = img_view.sum(axis=3).sum(axis=1)
 
 		# Save data to fits file:
-		# TODO
+#		# Make WCS solution parameters:
+#		w = WCS(naxis=2)
+#		w.wcs.crpix = [0,0]
+#		w.wcs.cdelt = [self.pixel_scale/3600, self.pixel_scale/3600]
+#		w.wcs.crval = self.coord_zero_point # [0.,0.]
+#		w.wcs.ctype = ["RA---AIR", "DEC--AIR"]
+#		header = w.to_header()
+#		
+#		# Instantiate primary header data unit:
+#		hdu = fits.PrimaryHDU(data=img, header=header)
+#		
+#		# Add timestamp to header with a unit of days:
+#		hdu.header['BJD'] = (timestamp/3600/24, 
+#			'time in days (arb. starting point)')
+#		hdu.header['NAXIS'] = (2, 'Number of data dimension')
+#		hdu.header['NAXIS1'] = (self.Ncols, 'Number of pixel columns')
+#		hdu.header['NAXIS2'] = (self.Nrows, 'Number of pixel rows')
+#		# TODO: write more info to header
+#		
+#		
+#		# Specify output directory:
+#		if outdir is None:
+#			outdir = os.path.join(self.output_folder, 'images')
+#		
+#		# Remove any previous hdf5 file made by prepare_photometry:
+#		try:
+#			hdf5filename = 'camera1_ccd1.hdf5'
+#			os.remove(os.path.join(self.output_folder,hdf5filename))
+#		except:
+#			pass
+#		
+#		# Write FITS file to output directory:
+#		hdu.writeto(os.path.join(outdir, 'test%02d.fits' % i),
+#					overwrite=self.overwrite_images)
 
 		# Save catalog to file:
 		# TODO
