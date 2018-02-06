@@ -195,15 +195,15 @@ class delsimi(object):
 
 
 if __name__ == '__main__':
-	# Make delsimi class instance:
-	simtest = delsimi()
-	
-	# Make PSF class instance:
-	# TODO: do not make a PSF instance here, do it in the delsimi class __init__
-	dpsf = PSF(imshape=simtest.jpgfile.size, superres=5)
-	
-	# Evaluate PSF with specified parameters:
-	img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
-			star=[10,15], integrationTime=10, angle=np.pi/7, speed=3, fwhm=1)
+#	# Make delsimi class instance:
+#	simtest = delsimi()
+#	
+#	# Make PSF class instance:
+#	# TODO: do not make a PSF instance here, do it in the delsimi class __init__
+#	dpsf = PSF(imshape=simtest.jpgfile.size, superres=5)
+#	
+#	# Evaluate PSF with specified parameters:
+#	img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
+#			star=[10,15], integrationTime=10, angle=np.pi/7, speed=3, fwhm=1)
 	
 	
