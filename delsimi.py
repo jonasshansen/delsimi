@@ -110,7 +110,7 @@ class delsimi(object):
 			dtype=('int64', 'float64', 'float64', 'float32')
 		)
 
-		# Convert Johnson-Cousins magnitudes to flux:
+		# Convert magnitudes to flux:
 		# TODO: requires absolute scaling only obtainable from photograph
 		# TODO: add uvb fluxes to catalog
 
@@ -134,7 +134,7 @@ class delsimi(object):
 
 		# TODO: Add white noise to image:
 
-		# Apply binning of Bayer pixels following the method linked to below:
+		# Apply sum binning of Bayer pixels using the method linked to below:
 		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
 		row_bin = 2
 		col_bin = 2
