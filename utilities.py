@@ -91,7 +91,7 @@ def bvr2rgb_discarded(bvr, A_inv=None, C=None):
 		C = np.array([B_BZP, G_BZP, R_BZP])
 	
 	# Calculate and return rgb values:
-	return np.flip((A_inv.dot(bvr - C))
+	return np.flip((A_inv.dot(bvr - C)))
 
 
 def bayer_scaling(img, flux):
