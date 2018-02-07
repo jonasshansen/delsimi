@@ -13,7 +13,7 @@ from astropy.io import fits
 from astropy.table import Table, Column
 from astropy.wcs import WCS
 
-from utilities import uvb2rgb
+from utilities import rvb2rgb
 from psf import PSF
 
 class delsimi(object):
@@ -124,23 +124,22 @@ class delsimi(object):
 		# Collect star parameters in list for catalog:
 		cat = [starids, starrows, starcols, mag_b, mag_v, mag_r]
 
-		# Make astropy table with catalog:
-		return Table(
-			cat,
-			names=('starid', 'row', 'col', 'mag_r', 'mag_v', 'mag_b'),
-			dtype=('int64', 'float64', 'float64', 'float32', 'float32', 'float32')
-		)
-
 		for star in cat:
 			# Convert Johnson filters to RGB colors:
-			rgb = bvr2rgb(bvr)
-	#		flux_r, flux_b, flux_g = bvr2rgb(np.array([flux_b, flux_v, flux_r]))
+			rgb = rvb2rgb(rvb)
 			star_flux = rgb
 	
 			# Convert magnitudes to flux:
 			mag2flux(star_flux)
 			# TODO: requires absolute scaling only obtainable from photograph
 			# TODO: add rgb fluxes to catalog
+
+		# Make astropy table with catalog:
+		return Table(
+			cat,
+			names=('starid', 'row', 'col', 'mag_r', 'mag_v', 'mag_b'),
+			dtype=('int64', 'float64', 'float64', 'float32', 'float32', 'float32')
+		)
 
 		# Instantiate PSF class:
 		dpsf = PSF(imshape=self.ccd_shape, superres=10)
