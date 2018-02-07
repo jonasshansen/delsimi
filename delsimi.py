@@ -127,7 +127,7 @@ class delsimi(object):
 		# Make astropy table with catalog:
 		return Table(
 			cat,
-			names=('starid', 'row', 'col', 'mag_b', 'mag_v', 'mag_r'),
+			names=('starid', 'row', 'col', 'mag_r', 'mag_v', 'mag_b'),
 			dtype=('int64', 'float64', 'float64', 'float32', 'float32', 'float32')
 		)
 

@@ -10,7 +10,7 @@ import numpy as np
 
 def bvr2rgb_discarded(bvr, A_inv=None, C=None):
 	"""
-	NOTE: This function does not yield believable output. It is kept here for
+	WARNING: This function does not yield believable output. It is kept here for
 	reference, but is not to be used.
 	
 	Convert Johnson-Cousins B, V and R magnitudes to RGB magnitudes using the
@@ -85,6 +85,10 @@ def bvr2rgb_discarded(bvr, A_inv=None, C=None):
 	
 	# Calculate and return rgb values:
 	return np.flip((A_inv.dot(bvr - C))
+
+
+def rvb2rgb(rvb):
+	return rgb
 
 
 
