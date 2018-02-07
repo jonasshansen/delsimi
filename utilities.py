@@ -8,9 +8,11 @@ Utilities for the delsimi simulation code.
 
 import numpy as np
 
-# TODO: make a sanity test on bvr2rgb output
-def bvr2rgb(bvr, A_inv=None, C=None):
+def bvr2rgb_discarded(bvr, A_inv=None, C=None):
 	"""
+	NOTE: This function does not yield believable output. It is kept here for
+	reference, but is not to be used.
+	
 	Convert Johnson-Cousins B, V and R magnitudes to RGB magnitudes using the
 	inversed conversion algortihm from Park (2016).
 
@@ -82,7 +84,7 @@ def bvr2rgb(bvr, A_inv=None, C=None):
 		C = np.array([B_BZP, G_BZP, R_BZP])
 	
 	# Calculate and return rgb values:
-	return A_inv.dot(bvr - C)
+	return np.flip((A_inv.dot(bvr - C))
 
 
 
