@@ -199,6 +199,8 @@ class delsimi(object):
 		w.wcs.crpix /= 2
 		w.wcs.cdelt /= 2
 
+		# TODO: update catalog
+
 
 		""" Export binned image to fits """
 		# Make primary header data unit:
