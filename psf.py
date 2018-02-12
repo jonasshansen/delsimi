@@ -22,7 +22,7 @@ class PSF():
 		
 		Future Extensions
 		-----------------
-		Linear filters:
+		Linear filters for convolution with smear and jitter:
 		They posses additivity (L[f+g] = L[f] + L[g]) and homogeneity (L[cf] =
 		cL[f], where c is a constant) according to Bogges and Narcowich 2009, 
 		p. 110.
@@ -42,15 +42,17 @@ class PSF():
 
 
 
-	def integrate_to_image(self, star, integration_time, angle_vel, 
+	def integrate_to_image(self, stars, integration_time, angle_vel, 
 			speed = None, fwhm = 1., jitter = False, focus = False):
 		"""
 		Integrate a PSF that is smeared in one direction to an image.
 		
 		Parameters
 		----------
-		star (array, float):
-			Row and column position in pixels of the star. This corresponds
+		stars (list):
+			List with an element for each star. Each element contains the
+			elements ``[row, col, [flux_R, flux_G, flux_B]]`` which are used
+			to generate the star. The row and column position corresponds
 			to the star position at the midtime of exposure.
 		integration_time (float):
 			CCD integration time.
@@ -123,18 +125,19 @@ class PSF():
 		
 		# Integrate the interpolation object in each pixel:
 		img = np.zeros(self.imshape, dtype='float64')
-		for row in range(self.imshape[0]):
-			for col in range(self.imshape[1]):
-				# Get star position in PSF(t=0)-based coordinates:
-				row_cen = row - star[0]
-				col_cen = col - star[1]
-				# Integrate only significant contributions to avoid artefacts:
-				withinBoundary = highresImageInterp(row_cen, col_cen) > 1e-9
-				if withinBoundary:
-					# Integrate normalised interpolation in the current pixel:
-					img[row,col] = highresImageInterp.integral(row_cen-0.5, row_cen+0.5, col_cen-0.5, col_cen+0.5)
-					# Apply Bayer filter flux scaling:
-					img = bayer_scaling(img, star[2])
+		for star in stars:
+			for row in range(self.imshape[0]):
+				for col in range(self.imshape[1]):
+					# Get star position in PSF(t=0)-based coordinates:
+					row_cen = row - star[0]
+					col_cen = col - star[1]
+					# Integrate only significant contributions to avoid artefacts:
+					withinBoundary = highresImageInterp(row_cen, col_cen) > 1e-9
+					if withinBoundary:
+						# Integrate normalised interpolation in the current pixel:
+						img[row,col] = highresImageInterp.integral(row_cen-0.5, row_cen+0.5, col_cen-0.5, col_cen+0.5)
+						# Apply Bayer filter flux scaling:
+						img = bayer_scaling(img, star[2])
 
 		return img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp
 

@@ -147,13 +147,15 @@ class delsimi(object):
 		# Instantiate PSF class:
 		dpsf = PSF(imshape=self.ccd_shape, superres=10)
 
+		# Prepare list with star information:
+		stars = [[row, col, [flux_R, flux_G, flux_B]] for 
+				(row, col, flux_R, flux_G, flux_B) in 
+				zip(catalog['row'], catalog['col'], \
+					catalog['flux_R'], catalog['flux_G'], catalog['flux_B'])]
+
 		# Integrate stars to image:
-		star_row = 20
-		star_col = 20
-		star_flux = 1e3
-		star = [star_row, star_col, star_flux]
 		img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp = \
-			dpsf.integrate_to_image(star=star,
+			dpsf.integrate_to_image(stars=stars,
 				integration_time=self.integration_time,
 				angle_vel=self.angle_vel, speed=speed, fwhm=1.)
 
