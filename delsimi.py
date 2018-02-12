@@ -209,16 +209,17 @@ class delsimi(object):
 		hdu.header['NAXIS2'] = (np.shape(img_binned)[0], 'Number of pixel rows')
 		
 		# Write image to fits file:
-		hdu.writeto(os.path.join(self.output_dir, 'image.fits'), 
-			overwrite=self.overwrite)
+		image_output_fname = os.path.join(self.output_dir, 'image.fits')
+		print('Writing image to '+image_output_fname)
+		hdu.writeto(image_output_fname, overwrite=self.overwrite)
 
 
 		""" Export catalog to ASCII file """
 		# Save catalog to file:
-		catalog_output_dir = os.path.join(self.output_dir, 'catalog.txt')
-		print('Writing catalog to '+catalog_output_dir)
+		catalog_output_fname = os.path.join(self.output_dir, 'catalog.txt')
+		print('Writing catalog to '+catalog_output_fname)
 		print(catalog)
-		np.savetxt(catalog_output_dir,
+		np.savetxt(catalog_output_fname,
 			np.asarray(catalog),
 			delimiter='\t',
 			header='    '.join(catalog.colnames))
