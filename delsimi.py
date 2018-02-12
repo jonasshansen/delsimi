@@ -131,7 +131,6 @@ class delsimi(object):
 			np.array([4., 6.5]),
 			np.array([5., 5.5]),
 			np.array([6., 4.5])] # test stars
-		Nstars = starid.size
 
 		# WCS initialisation:
 		# FIXME: binning and wcs solution problem
@@ -159,22 +158,15 @@ class delsimi(object):
 
 		# Convert magnitudes to flux:
 		# TODO: get constants for accurate magnitude to flux transformation
-		flux_R = np.empty_like(R_Bayer)
-		flux_G = np.empty_like(G_Bayer)
-		flux_B = np.empty_like(B_Bayer)
-		for flux_Bayer, M_Bayer, M_type in \
-			zip([flux_R, flux_G, flux_B], 
-				[R_Bayer, G_Bayer, B_Bayer], 
-				['R', 'G', 'B']):
-			for i in range(Nstars):
-				flux_Bayer[i] = mag2flux(M_Bayer, M_type)
+		for M_Bayer, M_type in zip([R_Bayer, G_Bayer, B_Bayer],['R', 'G', 'B']):
+			cat.append(mag2flux(M_Bayer, M_type))
 
 		# Make astropy table with catalog:
-		return Table(
+		catalog = Table(
 			cat,
 			names=('starid', 'RA', 'DEC', 'row', 'col', 
 					'R_Cousins', 'V_Johnson', 'B_Johnson',
-					'R_Bayer', 'G_Bayer', 'B_Bayer'
+					'R_Bayer', 'G_Bayer', 'B_Bayer',
 					'flux_R', 'flux_G', 'fluxB'),
 			dtype=('int64', 'float64', 'float64', 'float64', 'float64',
 					'float32', 'float32', 'float32',
@@ -226,8 +218,8 @@ class delsimi(object):
 
 
 if __name__ == '__main__':
-#	# Make delsimi class instance:
-#	simtest = delsimi()
+	# Make delsimi class instance:
+	simtest = delsimi()
 #	
 #	# Make PSF class instance:
 #	# TODO: do not make a PSF instance here, do it in the delsimi class __init__
