@@ -116,6 +116,9 @@ class delsimi(object):
 		self.angle_vel = angle_vel
 		self.angle_sat = angle_sat
 
+		# Set gain:
+		self.gain = 25 # electrons per LSB or ADU
+
 		# Set size in pixels to Delphini's CCD size, Aptina MT9T031 1/2" (4:3):
 		self.ccd_shape = np.array([1536,2048])
 
@@ -135,11 +138,8 @@ class delsimi(object):
 		# Calculate average speed of a star on the CCD in pixel units:
 		speed = star_CCD_speed(self.pixel_scale)
 
-		import sys
-		sys.exit()
 		# Instantiate PSF class:
 		dpsf = PSF(imshape=self.ccd_shape, superres=10)
-
 
 		# Evaluate PSF class:
 		star_row = 20
@@ -151,7 +151,24 @@ class delsimi(object):
 				integration_time=self.integration_time,
 				angle_vel=self.angle_vel, speed=speed, fwhm=1.)
 
-		# TODO: Add white noise to image:
+
+		""" Make noise """
+		# Set random number generator seed to a random state:
+		np.random.seed(seed=None)
+
+		# Generate dark current:
+		dark_current = self.integration_time * np.random.normal(
+						loc=1e2, scale=1e1, size=img.shape)
+
+		# Generate read noise:
+		read_noise = self.integration_time * np.random.normal(
+						loc=0., scale=6., size=img.shape)
+
+		# White noise to simulate background, faint stars and other sources:
+		other_noise = np.random.normal(loc=1e3, scale=1e5, size=img.shape)
+
+		# Apply noise to image:
+		img += dark_current + read_noise + other_noise
 
 
 		""" Apply binning """
@@ -163,6 +180,13 @@ class delsimi(object):
 							img.shape[1] // col_bin, col_bin)
 		img_binned = img_view.sum(axis=3).sum(axis=1)
 
+		# Update the WCS solution:
+		
+
+
+		""" Convert from electrons to digital units """
+		img_binned /= self.gain
+
 
 		""" Export to fits """
 		# Instantiate primary header data unit:
@@ -170,6 +194,7 @@ class delsimi(object):
 		hdu = fits.PrimaryHDU(data=img_binned, header=header)
 		
 		# Save data to fits file:
+		#img + noise
 
 
 		""" Export catalog to ASCII file """
@@ -280,6 +305,7 @@ class delsimi(object):
 		)
 		
 		return catalog, w
+
 
 
 if __name__ == '__main__':
