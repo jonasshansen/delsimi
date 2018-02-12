@@ -123,7 +123,7 @@ def bayer_scaling(img, flux):
 
 
 
-def mag2flux(mag):
+def mag2flux(mag, mag_type=None):
 	"""
 	Convert from magnitude to flux using scaling relation from
 	aperture photometry for the TESS satellite. This is an estimate.
@@ -132,11 +132,23 @@ def mag2flux(mag):
 	----------
 	mag (float): 
 		Magnitude in TESS band.
+	mag_type (string):
+		Magnitude type. Can be either of ``R``, ``G`` and ``B``. 
+		Accurate conversion constants not implemented.
 
 	Returns
 	-------
 	float: 
 		Corresponding flux value.
 	"""
-	return 10**(-0.4*(mag - 28.24))
+	
+	# Set magnitude to flux conversion constants for RGB:
+	# TODO: use measured constants for magnitude to flux conversion in RGB
+	mag_consts_RGB = {
+		"R": 28.24,
+		"G": 28.24,
+		"B": 28.24
+	}
+	
+	return 10**(-0.4*(mag - mag_consts_RGB.get(mag_type, 28.24)))
 
