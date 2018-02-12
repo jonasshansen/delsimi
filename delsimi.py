@@ -13,14 +13,16 @@ from astropy.io import fits
 from astropy.table import Table, Column
 from astropy.wcs import WCS
 
-from utilities import rvb2rgb
+from utilities import rvb2rgb, star_CCD_speed, mag2flux
 from psf import PSF
 
 class delsimi(object):
 	def __init__(self, input_dir='../infiles',
 					output_dir='../outfiles',
 					coord_cen=[0.,0.],
-					integration_time=30.0):
+					integration_time=30.,
+					angle_vel=0.,
+					angle_sat=0.,):
 		"""
 		Simulate stellar images from Delphini-1.
 
@@ -37,7 +39,14 @@ class delsimi(object):
 			Right ascension and declination coordinate center at the midtime of
 			exposure.
 		integration_time (float):
-			CCD integration time in seconds. Default is 30 seconds.
+			CCD integration time in seconds. Default is ``30.``.
+		angle_vel (float):
+			Angle of velocity in radians with respect to the ecliptic 
+			coordinates. Default is ``0.``.
+		angle_sat (float):
+			Angle of satellite in radians with respect to the ecliptic 
+			coordinates. Default is ``0.``.
+		
 
 		Future Extensions
 		-----------------
@@ -48,7 +57,6 @@ class delsimi(object):
 			
 		- Additional stars
 		- PSF length inferred from estimated satellite speed and exposure time
-		- True pixel sizes
 		- Catalog stars
 		- Simple noise
 		- Focus change
@@ -100,6 +108,8 @@ class delsimi(object):
 
 		self.coord_cen = coord_cen
 		self.integration_time = integration_time
+		self.angle_vel = angle_vel
+		self.angle_sat = angle_sat
 
 		# Set size in pixels to Delphini's CCD size, Aptina MT9T031 1/2" (4:3):
 		self.ccd_shape = np.array([1536,2048])
@@ -175,6 +185,9 @@ class delsimi(object):
 
 
 		""" Make image """
+		# Calculate average speed of a star on the CCD in pixel units:
+		speed = star_CCD_speed(self.pixel_scale)
+
 		# Instantiate PSF class:
 		dpsf = PSF(imshape=self.ccd_shape, superres=10)
 
@@ -184,8 +197,9 @@ class delsimi(object):
 		star_flux = 1e3
 		star = [star_row, star_col, star_flux]
 		img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp = \
-			dpsf.evaluate(star=star, integration_time=self.integration_time,
-				angle=angle, speed=speed, fwhm=fwhm)
+			dpsf.integrate_to_image(star=star,
+				integration_time=self.integration_time,
+				angle_vel=self.angle_vel, speed=speed, fwhm=1.)
 
 		# TODO: Add white noise to image:
 
