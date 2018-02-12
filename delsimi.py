@@ -25,7 +25,7 @@ class delsimi(object):
 	def __init__(self, input_dir='../infiles',
 					output_dir='../outfiles',
 					coord_cen=[0.,0.],
-					integration_time=30.,
+					integration_time=0.1,
 					angle_vel=0.,
 					angle_sat=0.,):
 		"""
@@ -78,6 +78,7 @@ class delsimi(object):
 		- Saturated pixels
 		- Cosmic rays
 		- Position variable PSF (not compatible with convolution)
+		- Pixel-integrated Gaussian at high time resolution to replace convolution?
 
 		PSF
 		---
@@ -96,11 +97,12 @@ class delsimi(object):
 
 		Code Authors
 		------------
-		Carolina von Essen, cessen@phys.au.dk (base code, see first commit on
-		Github)
-
 		Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com (extensions, see all
 		but the first commit on Github)
+
+		Carolina von Essen, cessen@phys.au.dk (initial idea, see first commit on
+		Github for code)
+
 
 		Online Repository
 		-----------------
@@ -145,7 +147,7 @@ class delsimi(object):
 		# Instantiate PSF class:
 		dpsf = PSF(imshape=self.ccd_shape, superres=10)
 
-		# Evaluate PSF class:
+		# Integrate stars to image:
 		star_row = 20
 		star_col = 20
 		star_flux = 1e3
