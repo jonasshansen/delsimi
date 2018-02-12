@@ -37,24 +37,31 @@ class PSF():
 
 
 
-	def integrate_to_image(self, star, integration_time, angle, speed, fwhm = 1, 
-			jitter = False, focus = False):
+	def integrate_to_image(self, star, integration_time, angle_vel, 
+			speed = None, fwhm = 1., jitter = False, focus = False):
 		"""
 		Integrate a PSF that is smeared in one direction to an image.
 		
 		Parameters
 		----------
-		star (array, float)
+		star (array, float):
 			Row and column position in pixels of the star. This corresponds
 			to the star position at the midtime of exposure.
-		integration_time (float)
+		integration_time (float):
 			CCD integration time.
-		angle (float)
+		angle_vel (float):
 			Angle in radians of star CCD movement.
-		speed (float)
-			Speed of star CCD movement. Assumed constant.
-		fwhm (float)
-			Full width at half maximum of PSF in pixels.
+		speed (float):
+			Speed of a star in pixels. Default is ``Ǹone```which yields the 
+			standard speed estimated from the speed of the ISS.
+		fwhm (float):
+			Full width at half maximum of PSF in pixels. Default is ``1.``.
+		jitter (string):
+			``True`` if jitter is to be applied. Default is ``False``. Not
+			implemented.
+		focus (string):
+			``True`` if focus is to be applied. Default is ``False``. Not
+			implemented.
 		
 		Returns
 		-------
@@ -69,12 +76,16 @@ class PSF():
 		highresImageInterp (interpolation object):
 			Interpolated smeared PSF. Can be integrated efficiently.
 		"""
+		# Set speed to standard speed if not given as parameter:
+		if speed is None:
+			speed = self.speed
+		
 		# Define subpixel buffer. Needs to be large for correct interpolation:
 		self.buffer = np.int(3*fwhm*self.superres)
 		
 		# Create smear kernel:
 		smearKernel, r0, c0, r1, c1 = self.makeSmearKernel(
-				integration_time, angle, speed, fwhm)
+				integration_time, angle_vel, speed, fwhm)
 		self.kernelShape = smearKernel.shape
 		
 		# Get highres PSF:
@@ -124,7 +135,7 @@ class PSF():
 
 
 
-	def makeSmearKernel(self, integration_time, angle, speed, fwhm):
+	def makeSmearKernel(self, integration_time, angle_vel, speed, fwhm):
 		"""
 		Make a smear kernel that describes the large-scale movement of a star
 		on the CCD. Do this by making a high resolution line that approximates
@@ -143,7 +154,7 @@ class PSF():
 		----------
 		integration_time (float)
 			CCD integration time.
-		angle (float)
+		angle_vel (float)
 			Angle in radians of star CCD movement.
 		speed (float)
 			Speed of star CCD movement.
@@ -169,8 +180,10 @@ class PSF():
 			c1 = buffer
 		else:
 			# Get integer pixel final position coordinates:
-			finalposRow = np.int(self.superres*speed*integration_time*np.sin(angle))
-			finalposCol = np.int(self.superres*speed*integration_time*np.cos(angle))
+			finalposRow = np.int(
+					self.superres*speed*integration_time*np.sin(angle_vel))
+			finalposCol = np.int(
+					self.superres*speed*integration_time*np.cos(angle_vel))
 			
 			# Set starting point (r0,c0):
 			r0 = 0 + buffer -1
