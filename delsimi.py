@@ -143,10 +143,9 @@ class delsimi(object):
 		header = w.to_header()
 
 		# WCS conversion from (ra,dec) to pixel (row,col):
-		CCD_row = np.empty_like(RA)
-		CCD_col = np.empty_like(DEC)
-		for i, (RA_i, DEC_i) in enumerate(zip(RA, DEC)):
-			CCD_row[i], CCD_col[i] = WCS.wcs_world2pix(RA_i, DEC_i)
+		wcs_sol = w.wcs_world2pix([RA, DEC], 0)
+		CCD_row = np.array([coord[0] for coord in wcs_sol])
+		CCD_col = np.array([coord[1] for coord in wcs_sol])
 
 		# Collect star parameters in list for catalog:
 		cat = [starid, RA, DEC, CCD_row, CCD_col,
