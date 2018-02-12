@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Delsimi image simulation code.
+
+@author: Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
+"""
 
 #import matplotlib.pyplot as plt
 #import math as mt
