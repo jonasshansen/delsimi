@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Utilities for the delsimi simulation code.
+Utility functions for the delsimi simulation code.
 
-@author: jonas
+@author: Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
 """
 
 import numpy as np
