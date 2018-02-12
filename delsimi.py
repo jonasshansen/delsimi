@@ -34,6 +34,8 @@ class delsimi(object):
 		It is assumed that the camera pointing is orthogonal to the tangent of
 		the orbit.
 
+		The output images will be in digital units.
+
 		Parameters
 		----------
 		input_dir (string):
@@ -55,7 +57,7 @@ class delsimi(object):
 
 		Future Extensions
 		-----------------
-		This is a list of possible future extensions to this code. The list is
+		This is a list of possible future extensions to the code. The list is
 		largely inspired by the SPyFFI manual which is linked to here:
 			
 			https://github.com/TESScience/SPyFFI
