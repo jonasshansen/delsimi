@@ -92,6 +92,9 @@ class delsimi(object):
 		https://github.com/jonasshansen/delsimi
 		"""
 
+
+
+		""" Set constants """
 		self.input_dir = input_dir
 		self.output_dir = output_dir
 
@@ -107,8 +110,18 @@ class delsimi(object):
 		conv_const = 206.265 # convert micrometer to mm and radians to arcsec
 		self.pixel_scale = pixel_size / focal_length * conv_const # arcsec/pixel
 
+
+
+		""" Load catalog """
 		# TODO: Load catalog here:
-		
+		starid, RA, DEC, R_Cousins, V_Johnson, B_Johnson = \
+			[np.array([0, 1]),
+			np.array([20., 20.01]), 
+			np.array([20., 20.015]),
+			np.array([4., 6.5]),
+			np.array([5., 5.5]),
+			np.array([6., 4.5])] # test stars
+		Nstars = starid.size
 
 		# WCS initialisation:
 		# FIXME: binning and wcs solution problem
@@ -118,29 +131,50 @@ class delsimi(object):
 		w.wcs.crval = self.coord_cen
 		w.wcs.ctype = ["RA---AIR", "DEC--AIR"]
 		header = w.to_header()
-		WCS.wcs_world2pix
-		# TODO: WCS conversion from (ra,dec) to pixel (row,col):
+
+		# WCS conversion from (ra,dec) to pixel (row,col):
+		CCD_row = np.empty_like(RA)
+		CCD_col = np.empty_like(DEC)
+		for i, (RA_i, DEC_i) in enumerate(zip(RA, DEC)):
+			CCD_row[i], CCD_col[i] = WCS.wcs_world2pix(RA_i, DEC_i)
 
 		# Collect star parameters in list for catalog:
-		cat = [starids, starrows, starcols, mag_b, mag_v, mag_r]
+		cat = [starid, RA, DEC, CCD_row, CCD_col,
+			 R_Cousins, V_Johnson, B_Johnson]
 
-		for star in cat:
-			# Convert Johnson filters to RGB colors:
-			rgb = rvb2rgb(rvb)
-			star_flux = rgb
-	
-			# Convert magnitudes to flux:
-			mag2flux(star_flux)
-			# TODO: requires absolute scaling only obtainable from photograph
-			# TODO: add rgb fluxes to catalog
+		# Convert Johnson-Cousins filter magnitudes to RGB magnitudes:
+		# TODO: apply accurate filter transformation
+		R_Bayer, G_Bayer, B_Bayer = rvb2rgb([R_Cousins, V_Johnson, B_Johnson])
+		for M_Bayer in [R_Bayer, G_Bayer, B_Bayer]:
+			cat.append(M_Bayer)
+
+		# Convert magnitudes to flux:
+		# TODO: get constants for accurate magnitude to flux transformation
+		flux_R = np.empty_like(R_Bayer)
+		flux_G = np.empty_like(G_Bayer)
+		flux_B = np.empty_like(B_Bayer)
+		for flux_Bayer, M_Bayer, M_type in \
+			zip([flux_R, flux_G, flux_B], 
+				[R_Bayer, G_Bayer, B_Bayer], 
+				['R', 'G', 'B']):
+			for i in range(Nstars):
+				flux_Bayer[i] = mag2flux(M_Bayer, M_type)
 
 		# Make astropy table with catalog:
 		return Table(
 			cat,
-			names=('starid', 'row', 'col', 'mag_r', 'mag_v', 'mag_b'),
-			dtype=('int64', 'float64', 'float64', 'float32', 'float32', 'float32')
+			names=('starid', 'RA', 'DEC', 'row', 'col', 
+					'R_Cousins', 'V_Johnson', 'B_Johnson',
+					'R_Bayer', 'G_Bayer', 'B_Bayer'
+					'flux_R', 'flux_G', 'fluxB'),
+			dtype=('int64', 'float64', 'float64', 'float64', 'float64',
+					'float32', 'float32', 'float32',
+					'float32', 'float32', 'float32',
+					'float64', 'float64', 'float64')
 		)
 
+
+		""" Make image """
 		# Instantiate PSF class:
 		dpsf = PSF(imshape=self.ccd_shape, superres=10)
 
@@ -155,6 +189,8 @@ class delsimi(object):
 
 		# TODO: Add white noise to image:
 
+
+		""" Apply binning """
 		# Apply sum binning of Bayer pixels using the method linked to below:
 		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
 		row_bin = 2
@@ -163,11 +199,15 @@ class delsimi(object):
 							img.shape[1] // col_bin, col_bin)
 		img_binned = img_view.sum(axis=3).sum(axis=1)
 
+
+		""" Export to fits """
 		# Instantiate primary header data unit:
 		hdu = fits.PrimaryHDU(data=img_binned, header=header)
 		
 		# Save data to fits file:
 
+
+		""" Export catalog to ASCII file """
 		# Save catalog to file:
 		# TODO
 
