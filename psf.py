@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+PSF methods for the delsimi simulation code.
+
+@author: Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
+"""
 
 import numpy as np
 from scipy.special import erf
