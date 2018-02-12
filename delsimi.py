@@ -133,6 +133,8 @@ class delsimi(object):
 
 		""" Load Catalog """
 		# TODO: add input catalog loading here
+
+		# Generate astropy table and WCS solution:
 		catalog, w = self.make_catalog(cat_input=None)
 
 
@@ -173,6 +175,10 @@ class delsimi(object):
 		img += dark_current + read_noise + other_noise
 
 
+		""" Convert from electrons to digital units """
+		img /= self.gain
+
+
 		""" Apply binning """
 		# Apply sum binning of Bayer pixels using the method linked to below:
 		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
@@ -183,25 +189,20 @@ class delsimi(object):
 		img_binned = img_view.sum(axis=3).sum(axis=1)
 
 		# Update the WCS solution:
-		
-
-
-		""" Convert from electrons to digital units """
-		img_binned /= self.gain
+		w.wcs.crpix /= 2
+		w.wcs.cdelt /= 2
 
 
 		""" Export to fits """
 		# Instantiate primary header data unit:
 		header = w.to_header()
 		hdu = fits.PrimaryHDU(data=img_binned, header=header)
-		
-		# Save data to fits file:
-		#img + noise
+
+		# TODO: Save data to fits file:
 
 
 		""" Export catalog to ASCII file """
-		# Save catalog to file:
-		# TODO
+		# TODO: Save catalog to file:
 
 
 
