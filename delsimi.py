@@ -126,16 +126,117 @@ class delsimi(object):
 		self.pixel_scale = pixel_size / focal_length * conv_const # arcsec/pixel
 
 
+		""" Load Catalog """
+		# TODO: add input catalog loading here
+		catalog, w = self.make_catalog(cat_input=None)
 
-		""" Load catalog """
-		# TODO: Load catalog here:
-		starid, RA, DEC, R_Cousins, V_Johnson, B_Johnson = \
-			[np.array([0, 1]),
-			np.array([20., 20.01]), 
-			np.array([20., 20.015]),
-			np.array([4., 6.5]),
-			np.array([5., 5.5]),
-			np.array([6., 4.5])] # test stars
+
+		""" Make image """
+		# Calculate average speed of a star on the CCD in pixel units:
+		speed = star_CCD_speed(self.pixel_scale)
+
+		import sys
+		sys.exit()
+		# Instantiate PSF class:
+		dpsf = PSF(imshape=self.ccd_shape, superres=10)
+
+
+		# Evaluate PSF class:
+		star_row = 20
+		star_col = 20
+		star_flux = 1e3
+		star = [star_row, star_col, star_flux]
+		img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp = \
+			dpsf.integrate_to_image(star=star,
+				integration_time=self.integration_time,
+				angle_vel=self.angle_vel, speed=speed, fwhm=1.)
+
+		# TODO: Add white noise to image:
+
+
+		""" Apply binning """
+		# Apply sum binning of Bayer pixels using the method linked to below:
+		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
+		row_bin = 2
+		col_bin = 2
+		img_view = img.reshape(img.shape[0] // row_bin, row_bin,
+							img.shape[1] // col_bin, col_bin)
+		img_binned = img_view.sum(axis=3).sum(axis=1)
+
+
+		""" Export to fits """
+		# Instantiate primary header data unit:
+		header = w.to_header()
+		hdu = fits.PrimaryHDU(data=img_binned, header=header)
+		
+		# Save data to fits file:
+
+
+		""" Export catalog to ASCII file """
+		# Save catalog to file:
+		# TODO
+
+
+
+	def make_catalog(self, cat_input=None):
+		"""
+		Generate an astropy Table with the catalog from stellar position and
+		magnitudes.
+
+		Parameters
+		----------
+		cat_input (list of arrays):
+			List with numpy arrays containing the following:
+			 - starid (int): Star id for internal use, e.g. ``0``, ``1``, ...
+			 - RA (float): Right ascension of stars.
+			 - DEC (float): Declination of stars.
+			 - R (float): Cousins filters R magnitude of stars.
+			 - V (float): Johnson filters V magnitude of stars.
+			 - B (float): Johnson filters B magnitude of stars.
+			Default is ``None`` which generates an ``cat_input`` with two test
+			stars with the following parameters:
+			 - starid (int): np.array([0, 1])
+			 - RA (float): np.array([20., 20.01])
+			 - DEC (float): np.array([20., 20.015])
+			 - R (float): np.array([4., 6.5])
+			 - V (float): np.array([5., 5.5])
+			 - B (float): np.array([6., 4.5])
+
+		Returns
+		-------
+		catalog (astropy Table): 
+			Table with catalog information. The columns contain the following:
+			 - starid (int): Star id for internal use, e.g. ``0``, ``1``, ...
+			 - RA (float): Right ascension of stars.
+			 - DEC (float): Declination of stars.
+			 - row (float): Pixel row position on CCD.
+			 - col (float): Pixel column position on CCD.
+			 - R_Cousins (float): Cousins filters R magnitude of stars.
+			 - V_Johnson (float): Johnson filters V magnitude of stars.
+			 - B_Johnson (float): Johnson filters B magnitude of stars.
+			 - R_Bayer (float): Bayer filter R magnitude of stars.
+			 - G_Bayer (float): Bayer filter G magnitude of stars.
+			 - B_Bayer (float): Bayer filter B magnitude of stars.
+			 - flux_R (float): Bayer filter R flux of stars.
+			 - flux_G (float): Bayer filter G flux of stars.
+			 - fluxB (float): Bayer filter B flux of stars.
+		w (astropy WCS solution):
+			World Coordinate System solution for the current position. Can be
+			used to transform from ``(ra,dec)`` to pixel ``(row,col)`` with 
+			``row_col = w.wcs_world2pix([RA, DEC], 0)``.
+		"""
+
+		if cat_input is None:
+			# Generate two test stars:
+			cat_input = 	[np.array([0, 1]),   # starid
+				np.array([20., 20.01]),      # rigth ascension
+				np.array([20., 20.015]),     # declination
+				np.array([4., 6.5]),         # R magnitude (Cousins)
+				np.array([5., 5.5]),         # V magnitude (Johnson)
+				np.array([6., 4.5])]         # B magnitude (Johnson)
+
+		# Extract parameters from catalog input:
+		starid, RA, DEC, R_Cousins, V_Johnson, B_Johnson = cat_input
 
 		# WCS initialisation:
 		# FIXME: binning and wcs solution problem
@@ -144,12 +245,11 @@ class delsimi(object):
 		w.wcs.cdelt = [self.pixel_scale/3600, self.pixel_scale/3600]
 		w.wcs.crval = self.coord_cen
 		w.wcs.ctype = ["RA---AIR", "DEC--AIR"]
-		header = w.to_header()
 
 		# WCS conversion from (ra,dec) to pixel (row,col):
-		wcs_sol = w.wcs_world2pix([RA, DEC], 0)
-		CCD_row = np.array([coord[0] for coord in wcs_sol])
-		CCD_col = np.array([coord[1] for coord in wcs_sol])
+		row_col = w.wcs_world2pix([RA, DEC], 0)
+		CCD_row = np.array([coord[0] for coord in row_col])
+		CCD_col = np.array([coord[1] for coord in row_col])
 
 		# Collect star parameters in list for catalog:
 		cat = [starid, RA, DEC, CCD_row, CCD_col,
@@ -178,48 +278,8 @@ class delsimi(object):
 					'float32', 'float32', 'float32',
 					'float64', 'float64', 'float64')
 		)
-
-
-		""" Make image """
-		# Calculate average speed of a star on the CCD in pixel units:
-		speed = star_CCD_speed(self.pixel_scale)
-
-		# Instantiate PSF class:
-		dpsf = PSF(imshape=self.ccd_shape, superres=10)
-
-		# Evaluate PSF class:
-		star_row = 20
-		star_col = 20
-		star_flux = 1e3
-		star = [star_row, star_col, star_flux]
-		img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp = \
-			dpsf.integrate_to_image(star=star,
-				integration_time=self.integration_time,
-				angle_vel=self.angle_vel, speed=speed, fwhm=1.)
-
-		# TODO: Add white noise to image:
-
-
-		""" Apply binning """
-		# Apply sum binning of Bayer pixels using the method linked to below:
-		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
-		row_bin = 2
-		col_bin = 2
-		img_view = img.reshape(img.shape[0] // row_bin, row_bin,
-							img.shape[1] // col_bin, col_bin)
-		img_binned = img_view.sum(axis=3).sum(axis=1)
-
-
-		""" Export to fits """
-		# Instantiate primary header data unit:
-		hdu = fits.PrimaryHDU(data=img_binned, header=header)
 		
-		# Save data to fits file:
-
-
-		""" Export catalog to ASCII file """
-		# Save catalog to file:
-		# TODO
+		return catalog, w
 
 
 if __name__ == '__main__':
