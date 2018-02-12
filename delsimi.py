@@ -251,7 +251,7 @@ class delsimi(object):
 			 - B_Bayer (float): Bayer filter B magnitude of stars.
 			 - flux_R (float): Bayer filter R flux of stars.
 			 - flux_G (float): Bayer filter G flux of stars.
-			 - fluxB (float): Bayer filter B flux of stars.
+			 - flux_B (float): Bayer filter B flux of stars.
 		w (astropy WCS solution):
 			World Coordinate System solution for the current position. Can be
 			used to transform from ``(ra,dec)`` to pixel ``(row,col)`` with 
@@ -304,7 +304,7 @@ class delsimi(object):
 			names=('starid', 'RA', 'DEC', 'row', 'col', 
 					'R_Cousins', 'V_Johnson', 'B_Johnson',
 					'R_Bayer', 'G_Bayer', 'B_Bayer',
-					'flux_R', 'flux_G', 'fluxB'),
+					'flux_R', 'flux_G', 'flux_B'),
 			dtype=('int64', 'float64', 'float64', 'float64', 'float64',
 					'float32', 'float32', 'float32',
 					'float32', 'float32', 'float32',
