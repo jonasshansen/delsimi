@@ -152,7 +152,7 @@ class PSF():
 									'Bayer filter flag must be 0, 1 or 2.')
 						
 						# Integrate normalised interpolation in the current pixel:
-						img[row,col] = Bayer_flux * \
+						img[row,col] += Bayer_flux * \
 								highresImageInterp.integral(
 									row_cen-0.5, row_cen+0.5,
 									col_cen-0.5, col_cen+0.5)
