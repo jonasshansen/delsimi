@@ -1,3 +1,11 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Delsimi image simulation code.
+
+@author: Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
+"""
+
 #import matplotlib.pyplot as plt
 #import math as mt
 #import matplotlib
@@ -6,230 +14,332 @@ from PIL import Image
 import os
 import numpy as np
 import scipy
+from astropy.io import fits
+from astropy.table import Table, Column
+from astropy.wcs import WCS
+
+from utilities import rvb2rgb, star_CCD_speed, mag2flux
 from psf import PSF
 
-
 class delsimi(object):
-	def __init__(self, integrationTime = 30.0):
+	def __init__(self, input_dir='../infiles',
+					output_dir='../outfiles',
+					overwrite=True,
+					coord_cen=[0.,0.],
+					integration_time=0.1,
+					angle_vel=0.,
+					angle_sat=0.):
 		"""
 		Simulate stellar images from Delphini-1.
+
+		It is assumed that the camera pointing is orthogonal to the tangent of
+		the orbit.
+
+		The output images will be in digital units.
+
+		Parameters
+		----------
+		input_dir (string):
+			Input file directory. Default is ``'../infiles'``.
+		output_dir (string):
+			Output file directory. Default is ``'../outfiles'``.
+		overwrite (boolean):
+			``True`` if to overwrite FITS images in output.
+		coord_cen (list of floats):
+			Right ascension and declination coordinate center at the midtime of
+			exposure.
+		integration_time (float):
+			CCD integration time in seconds. Default is ``30.``.
+		angle_vel (float):
+			Angle of velocity in radians with respect to the ecliptic 
+			coordinates. Default is ``0.``.
+		angle_sat (float):
+			Angle of satellite in radians with respect to the ecliptic 
+			coordinates. Default is ``0.``.
 		
-		Input
-		-----
-		integrationTime (float)
-			CCD integration time in seconds. Default is 30 seconds.
-		
+
 		Future Extensions
 		-----------------
-		This is a list of possible future extensions to this code. The list is
+		This is a list of possible future extensions to the code. The list is
 		largely inspired by the SPyFFI manual which is linked to here:
 			
 			https://github.com/TESScience/SPyFFI
 			
 		- Additional stars
 		- PSF length inferred from estimated satellite speed and exposure time
-		- True pixel sizes
 		- Catalog stars
 		- Simple noise
 		- Focus change
 		- Jitter
 		- Pixel sensitivity variations
+		- Realistic constant used for magnitude to flux conversion (color dependent)
+		- Realistic Johnson-Cousins BVR to RGB magnitude conversion constants
 		- Background
 		- Photon noise
 		- Readout smear
+		- Rolling shutter
 		- Saturated pixels
 		- Cosmic rays
 		- Position variable PSF (not compatible with convolution)
-		
+		- Pixel-integrated Gaussian at high time resolution to replace convolution?
+
 		PSF
 		---
 		For the point spread function (PSF) a Gaussian is applied. This is an
 		approximation.
-		
-		MTF
-		---
-		# TODO: is this correct?
-		The Modulation transfer function (MTF) is a description of both jitter
-		(high temporal frequency compared to exposure time) and smear (low
-		temporal frequency compared to exposure time). It ferciliates the 
-		simulation of movement during CCD integration. Thus the smear caused
-		by the orbital motion of the satellite as well as possible jitter can
-		be included in the simulation.
-		NOTE: This is currently not implemented.
-		
+
+		Sensor
+		------
+		The Delphini-1 sensor is an Aptina MT9T031 1/2" (4:3) CMOS Bayer 
+		pattern sensor. Thus, each pixel has a colour filter. Binning is 
+		applied to convert the Bayer pattern pixels to greyscale. Four pixels,
+		red, blue and two green, are summed to yield one greyscale pixel. This
+		binning is implemented in the code, assuming no cromatic abberation, 
+		which changes the PSF based on wavelength.
+
+
 		Code Authors
 		------------
-		Carolina von Essen, cessen@phys.au.dk (base code, see first commit on
-		Github)
-		
 		Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com (extensions, see all
 		but the first commit on Github)
-		
+
+		Carolina von Essen, cessen@phys.au.dk (initial idea, see first commit on
+		Github for code)
+
+
 		Online Repository
 		-----------------
 		https://github.com/jonasshansen/delsimi
 		"""
-		self.integrationTime = integrationTime
-		
-		self.infiledir = "../infiles"
-		self.outfiledir = "../outfiles"
-		
-		# Load jpg file:
-		# TODO: what is this used for? jpg encoding?
-		self.jpgfile = Image.open(os.path.join("../infiles","Southern_Cross.jpg"))
-#		print(jpgfile.bits, jpgfile.size, jpgfile.format)
+
+
+		""" Set constants """
+		self.input_dir = input_dir
+		self.output_dir = output_dir
+		self.overwrite = overwrite
+
+		self.coord_cen = coord_cen
+		self.integration_time = integration_time
+		self.angle_vel = angle_vel
+		self.angle_sat = angle_sat
+
+		# Set gain:
+		self.gain = 25 # electrons per LSB or ADU
+
 		# Set size in pixels to Delphini's CCD size, Aptina MT9T031 1/2" (4:3):
-#		self.jpgfile.size = np.array([200,200])
-		self.jpgfile.size = np.array([1536,2048])
+		self.ccd_shape = np.array([1536,2048])
+
+		# Set pixel scale in arcseconds:
+		pixel_size = 3.2 # micrometer
+		focal_length = 35 # millimeter
+		conv_const = 206.265 # convert micrometer to mm and radians to arcsec
+		self.pixel_scale = pixel_size / focal_length * conv_const # arcsec/pixel
+
+
+		""" Load Catalog """
+		# TODO: add input catalog loading here
+
+		# Generate astropy table and WCS solution:
+		catalog, w = self.make_catalog(cat_input=None)
+
+
+		""" Make image """
+		# Calculate average speed of a star on the CCD in pixel units:
+		speed = star_CCD_speed(self.pixel_scale)
+
+		# Instantiate PSF class:
+		dpsf = PSF(imshape=self.ccd_shape, superres=10)
+
+		# Prepare list with star information:
+		stars = [[row, col, [flux_R, flux_G, flux_B]] for 
+				(row, col, flux_R, flux_G, flux_B) in 
+				zip(catalog['row'], catalog['col'], \
+					catalog['flux_R'], catalog['flux_G'], catalog['flux_B'])]
+
+		# Integrate stars to image:
+		img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp = \
+			dpsf.integrate_to_image(stars=stars,
+				integration_time=self.integration_time,
+				angle_vel=self.angle_vel, speed=speed, fwhm=1.)
+
+
+		""" Make noise """
+		# Set random number generator seed to a random state:
+		np.random.seed(seed=None)
+
+		# Generate dark current:
+		dark_current = self.integration_time * np.random.normal(
+						loc=1e2, scale=1e1, size=img.shape)
+
+		# Generate read noise:
+		read_noise = self.integration_time * np.random.normal(
+						loc=0., scale=6., size=img.shape)
+
+		# White noise to simulate background, faint stars and other sources:
+		other_noise = np.random.normal(loc=1e3, scale=1e5, size=img.shape)
+
+		# Apply noise to image:
+		img += dark_current + read_noise + other_noise
+
+
+		""" Convert from electrons to digital units """
+		img /= self.gain
+
+
+		""" Apply binning """
+		# Apply sum binning of Bayer pixels using the method linked to below:
+		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
+		row_bin = 2
+		col_bin = 2
+		img_view = img.reshape(img.shape[0] // row_bin, row_bin,
+							img.shape[1] // col_bin, col_bin)
+		img_binned = img_view.sum(axis=3).sum(axis=1)
+
+		# Update the WCS solution:
+		w.wcs.crpix /= 2
+		w.wcs.cdelt /= 2
+
+
+		""" Export binned image to fits """
+		# Make primary header data unit:
+		header = w.to_header()
+		hdu = fits.PrimaryHDU(data=img_binned, header=header)
+		hdu.header['NAXIS'] = (2, 'Number of data dimension')
+		hdu.header['NAXIS1'] = (np.shape(img_binned)[1], 'Number of pixel columns')
+		hdu.header['NAXIS2'] = (np.shape(img_binned)[0], 'Number of pixel rows')
 		
-		# Define number of output frames of each type:
-		self.biasnr = 1
-		self.flatsnr = 1
-		self.sciencenr = 1
-		#self.biasnr = 10
-		#self.flatsnr = 3
-		#self.sciencenr = 
-		
-		# TODO: Make a PSF instance here
+		# Write image to fits file:
+		hdu.writeto(os.path.join(self.output_dir, 'image.fits'), 
+			overwrite=self.overwrite)
+
+
+		""" Export catalog to ASCII file """
+		# Save catalog to file:
+		catalog_output_dir = os.path.join(self.output_dir, 'catalog.txt')
+		print('Writing catalog to '+catalog_output_dir)
+		print(catalog)
+		np.savetxt(catalog_output_dir,
+			np.asarray(catalog),
+			delimiter='\t',
+			header='    '.join(catalog.colnames))
 
 
 
-	def makebias(self):
+	def make_catalog(self, cat_input=None):
 		"""
-		Make bias frames.
-		"""
-		
-		biasmeanr = 3.75394283333 ; biasstdevr = 0.532235493781
-		biasmeang = 2.34252829167 ; biasstdevg = 0.506928983646
-		biasmeanb = 4.36334695833 ; biasstdevb = 0.993081162917
-		
-		self.biasmeanr = biasmeanr
-		self.biasstdevr = biasstdevr
-		
-		for i in range(self.biasnr):
-			bias_RGB = np.zeros((self.jpgfile.size[0], self.jpgfile.size[1], 3), "uint8") 
-			biasr = np.random.normal(biasmeanr, biasstdevr, self.jpgfile.size[0]*self.jpgfile.size[1]).reshape((self.jpgfile.size[0], self.jpgfile.size[1]))
-			biasg = np.random.normal(biasmeang, biasstdevg, self.jpgfile.size[0]*self.jpgfile.size[1]).reshape((self.jpgfile.size[0], self.jpgfile.size[1]))
-			biasb = np.random.normal(biasmeanb, biasstdevb, self.jpgfile.size[0]*self.jpgfile.size[1]).reshape((self.jpgfile.size[0], self.jpgfile.size[1]))
-		
-			bias_RGB[:,:,0] = biasr
-			bias_RGB[:,:,1] = biasg
-			bias_RGB[:,:,2] = biasb
-		
-#			imout = 'bias_'+str(i)+'.jpg'
-		
-			scipy.misc.imsave(os.path.join(self.outfiledir,'bias_%02d.jpg' % i), bias_RGB)
+		Generate an astropy Table with the catalog from stellar position and
+		magnitudes.
 
+		Parameters
+		----------
+		cat_input (list of arrays):
+			List with numpy arrays containing the following:
+			 - starid (int): Star id for internal use, e.g. ``0``, ``1``, ...
+			 - RA (float): Right ascension of stars.
+			 - DEC (float): Declination of stars.
+			 - R (float): Cousins filters R magnitude of stars.
+			 - V (float): Johnson filters V magnitude of stars.
+			 - B (float): Johnson filters B magnitude of stars.
+			Default is ``None`` which generates an ``cat_input`` with two test
+			stars with the following parameters:
+			 - starid (int): np.array([0, 1])
+			 - RA (float): np.array([20., 20.01])
+			 - DEC (float): np.array([20., 20.015])
+			 - R (float): np.array([4., 6.5])
+			 - V (float): np.array([5., 5.5])
+			 - B (float): np.array([6., 4.5])
 
-	def makeflat(self):
+		Returns
+		-------
+		catalog (astropy Table): 
+			Table with catalog information. The columns contain the following:
+			 - starid (int): Star id for internal use, e.g. ``0``, ``1``, ...
+			 - RA (float): Right ascension of stars.
+			 - DEC (float): Declination of stars.
+			 - row (float): Pixel row position on CCD.
+			 - col (float): Pixel column position on CCD.
+			 - R_Cousins (float): Cousins filters R magnitude of stars.
+			 - V_Johnson (float): Johnson filters V magnitude of stars.
+			 - B_Johnson (float): Johnson filters B magnitude of stars.
+			 - R_Bayer (float): Bayer filter R magnitude of stars.
+			 - G_Bayer (float): Bayer filter G magnitude of stars.
+			 - B_Bayer (float): Bayer filter B magnitude of stars.
+			 - flux_R (int): Bayer filter R flux of stars in electrons.
+			 - flux_G (int): Bayer filter G flux of stars in electrons.
+			 - flux_B (int): Bayer filter B flux of stars in electrons.
+		w (astropy WCS solution):
+			World Coordinate System solution for the current position. Can be
+			used to transform from ``(ra,dec)`` to pixel ``(row,col)`` with 
+			``row_col = w.wcs_world2pix([RA, DEC], 0)``.
 		"""
-		Make flat frames.
-		"""
-		
-		master_flat = np.zeros((self.jpgfile.size[0],self.jpgfile.size[1], 3), "uint8") 
-		master_flatr = np.zeros(self.jpgfile.size[0]*self.jpgfile.size[1]).reshape(self.jpgfile.size[0], self.jpgfile.size[1])
-		master_flatg = np.zeros(self.jpgfile.size[0]*self.jpgfile.size[1]).reshape(self.jpgfile.size[0], self.jpgfile.size[1]) 
-		master_flatb = np.zeros(self.jpgfile.size[0]*self.jpgfile.size[1]).reshape(self.jpgfile.size[0], self.jpgfile.size[1])
-		
-		flatmeanr = 133.7070775 ; flatstdr = 20.2505762111
-		flatmeang = 133.0223080 ; flatstdg = 19.9602947291
-		flatmeanb = 132.3117177 ; flatstdb = 20.2094106756
-		
-		for i in range(self.flatsnr):
-			flats_RGB = np.zeros((self.jpgfile.size[0], self.jpgfile.size[1], 3), "uint8") 
-			flatsr = np.random.normal(flatmeanr, flatstdr, self.jpgfile.size[0]*self.jpgfile.size[1]).reshape(self.jpgfile.size[0], self.jpgfile.size[1])
-			flatsg = np.random.normal(flatmeang, flatstdg, self.jpgfile.size[0]*self.jpgfile.size[1]).reshape(self.jpgfile.size[0], self.jpgfile.size[1])
-			flatsb = np.random.normal(flatmeanb, flatstdb, self.jpgfile.size[0]*self.jpgfile.size[1]).reshape(self.jpgfile.size[0], self.jpgfile.size[1])
-		
-			for l1 in range(self.jpgfile.size[0]):
-				for l2 in range(self.jpgfile.size[1]):
-		
-					#central illumination/vignetting.
-					flatsr[l1,l2] = flatsr[l1,l2] + 35.*np.exp( -( (float(l1)-self.jpgfile.size[0]/2.)**2/((2.*self.jpgfile.size[0]/5.)**2) + (float(l2)-self.jpgfile.size[1]/2.)**2/((2.*self.jpgfile.size[1]/5.)**2) ) )
-					flatsg[l1,l2] = flatsr[l1,l2] + 35.*np.exp( -( (float(l1)-self.jpgfile.size[0]/2.)**2/((2.*self.jpgfile.size[0]/5.)**2) + (float(l2)-self.jpgfile.size[1]/2.)**2/((2.*self.jpgfile.size[1]/5.)**2) ) )
-					flatsb[l1,l2] = flatsr[l1,l2] + 35.*np.exp( -( (float(l1)-self.jpgfile.size[0]/2.)**2/((2.*self.jpgfile.size[0]/5.)**2) + (float(l2)-self.jpgfile.size[1]/2.)**2/((2.*self.jpgfile.size[1]/5.)**2) ) )
-		
-			flats_RGB[:,:,0] = flatsr
-			flats_RGB[:,:,1] = flatsg
-			flats_RGB[:,:,2] = flatsb
-		
-			scipy.misc.imsave(os.path.join(self.outfiledir, 'flats_%02d.jpg' % i), flats_RGB)
-		
-			master_flatr = master_flatr + flatsr
-			master_flatg = master_flatg + flatsg
-			master_flatb = master_flatb + flatsb
-		
-		master_flatr = master_flatr/float(self.flatsnr)
-		master_flatg = master_flatg/float(self.flatsnr)
-		master_flatb = master_flatb/float(self.flatsnr)
-		
-		master_flat[:,:,0] = master_flatr
-		master_flat[:,:,1] = master_flatg
-		master_flat[:,:,2] = master_flatb
-		
-		scipy.misc.imsave(os.path.join(self.outfiledir,'master_flat.jpg'), master_flat)
-		scipy.misc.imsave(os.path.join(self.outfiledir,'master_flat_norm.jpg'), master_flat/np.mean(master_flat))
-		
-		self.master_flat = master_flat
 
+		if cat_input is None:
+			# Generate two test stars:
+			cat_input = 	[np.array([0, 1]),   # starid
+				np.array([0., 2.0]),      # rigth ascension
+				np.array([0., 2.0]),     # declination
+				np.array([4., 6.5]),         # R magnitude (Cousins)
+				np.array([5., 5.5]),         # V magnitude (Johnson)
+				np.array([6., 4.5])]         # B magnitude (Johnson)
 
-	def makescience(self):
-		"""
-		Make science frames using the master flat.
-		"""
+		# Extract parameters from catalog input:
+		starid, RA, DEC, R_Cousins, V_Johnson, B_Johnson = cat_input
+
+		# WCS initialisation:
+		# FIXME: binning and wcs solution problem
+		w = WCS(naxis=2)
+		w.wcs.crpix = self.ccd_shape/2
+		w.wcs.cdelt = [self.pixel_scale/3600, self.pixel_scale/3600]
+		w.wcs.crval = self.coord_cen
+		w.wcs.ctype = ["RA---AIR", "DEC--AIR"]
+
+		# WCS conversion from (ra,dec) to pixel (row,col):
+		row_col = w.wcs_world2pix([RA, DEC], 0)
+		CCD_row = np.array([coord[0] for coord in row_col])
+		CCD_col = np.array([coord[1] for coord in row_col])
+
+		# Collect star parameters in list for catalog:
+		cat = [starid, RA, DEC, CCD_row, CCD_col,
+			 R_Cousins, V_Johnson, B_Johnson]
+
+		# Convert Johnson-Cousins filter magnitudes to RGB magnitudes:
+		# TODO: apply accurate filter transformation
+		R_Bayer, G_Bayer, B_Bayer = rvb2rgb([R_Cousins, V_Johnson, B_Johnson])
+		for M_Bayer in [R_Bayer, G_Bayer, B_Bayer]:
+			cat.append(M_Bayer)
+
+		# Convert magnitudes to flux:
+		# TODO: get constants for accurate magnitude to flux transformation
+		for M_Bayer, M_type in zip([R_Bayer, G_Bayer, B_Bayer],['R', 'G', 'B']):
+			cat.append(mag2flux(M_Bayer, M_type))
+
+		# Make astropy table with catalog:
+		catalog = Table(
+			cat,
+			names=('starid', 'RA', 'DEC', 'row', 'col', 
+					'R_Cousins', 'V_Johnson', 'B_Johnson',
+					'R_Bayer', 'G_Bayer', 'B_Bayer',
+					'flux_R', 'flux_G', 'flux_B'),
+			dtype=('int64', 'float64', 'float64', 'float64', 'float64',
+					'float32', 'float32', 'float32',
+					'float32', 'float32', 'float32',
+					'int64', 'int64', 'int64')
+		)
 		
-		sciencer = np.zeros(self.jpgfile.size[0]*self.jpgfile.size[1]).reshape((self.jpgfile.size[0], self.jpgfile.size[1]))
-		scienceg = np.zeros(self.jpgfile.size[0]*self.jpgfile.size[1]).reshape((self.jpgfile.size[0], self.jpgfile.size[1]))
-		scienceb = np.zeros(self.jpgfile.size[0]*self.jpgfile.size[1]).reshape((self.jpgfile.size[0], self.jpgfile.size[1]))
-		
-		for i in range(self.sciencenr):
-			# TODO: call the PSF instance with relevant parameters here
-			science_RGB = np.zeros((self.jpgfile.size[0], self.jpgfile.size[1], 3), "uint8") 
-		
-			randx = np.random.uniform(0.2*self.jpgfile.size[0], 0.8*self.jpgfile.size[0])
-			randy = np.random.uniform(0.2*self.jpgfile.size[1], 0.8*self.jpgfile.size[1])
-			sigmax_r = 13.0 + np.random.uniform(0.2,0.3)
-			sigmay_r = 13.0 + np.random.uniform(0.1,0.2)
-			sigmax_g = 9.5 + np.random.uniform(0.2,0.3)
-			sigmay_g = 9.5 + np.random.uniform(0.1,0.2)
-			sigmax_b = 9.0 + np.random.uniform(0.2,0.3)
-			sigmay_b = 9.0 + np.random.uniform(0.1,0.2)
-			
-			# Loop through each pixel of the file:
-			for l1 in range(self.jpgfile.size[0]):
-				for l2 in range(self.jpgfile.size[1]):
-					
-					biaslevel = np.random.normal(self.biasmeanr*4., self.biasstdevr*4.)
-					sciencer[l1,l2] = (self.master_flat[l1,l2,0]/np.mean(self.master_flat))*biaslevel + 10. + 190.*(np.exp(- ((float(l1) - randx)**2/(2.*sigmax_r**2) + (float(l2) - randy)**2/(2.*sigmax_r**2) ))) 
-					scienceg[l1,l2] = (self.master_flat[l1,l2,1]/np.mean(self.master_flat))*biaslevel + 5. + 190.*(np.exp(- ((float(l1) - randx)**2/(2.*sigmax_g**2) + (float(l2) - randy)**2/(2.*sigmax_g**2) )))
-					scienceb[l1,l2] = (self.master_flat[l1,l2,2]/np.mean(self.master_flat))*biaslevel + 8. + 190.*(np.exp(- ((float(l1) - randx)**2/(2.*sigmax_b**2) + (float(l2) - randy)**2/(2.*sigmax_b**2) )))
-#		
-			science_RGB[:,:,0] = sciencer
-			science_RGB[:,:,1] = scienceg
-			science_RGB[:,:,2] = scienceb
-		
-			scipy.misc.imsave(os.path.join(self.outfiledir,'science_%02d.jpg' % i), science_RGB)
+		return catalog, w
+
 
 
 if __name__ == '__main__':
 	# Make delsimi class instance:
 	simtest = delsimi()
+#	
+#	# Make PSF class instance:
+#	# TODO: do not make a PSF instance here, do it in the delsimi class __init__
+#	dpsf = PSF(imshape=simtest.jpgfile.size, superres=5)
+#	
+#	# Evaluate PSF with specified parameters:
+#	img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
+#			star=[10,15], integrationTime=10, angle=np.pi/7, speed=3, fwhm=1)
 	
-	# Make PSF class instance:
-	# TODO: do not make a PSF instance here, do it in the delsimi class __init__
-	dpsf = PSF(imshape=simtest.jpgfile.size, superres=3)
 	
-	# Evaluate PSF with specified parameters:
-	img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
-			star=[10,15], integrationTime=10, angle=np.pi/7, speed=3, fwhm=1)
-	
-	
-	print('Making bias...')
-	simtest.makebias()
-	print('...done!')
-	print('Making flat...')
-	simtest.makeflat()
-	print('...done!')
-	print('Making science...')
-	simtest.makescience(img)
-	print('...done!')
