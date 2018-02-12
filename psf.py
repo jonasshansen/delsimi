@@ -13,7 +13,7 @@ from scipy.interpolate import RectBivariateSpline
 from skimage.draw import line_aa
 #from scipy.interpolate import splprep
 
-from utilities import bayer_scaling
+from utilities import make_bayer_filter
 
 class PSF():
 	def __init__(self, imshape, superres = 10, rgb_filter = 'bggr'):
@@ -46,7 +46,7 @@ class PSF():
 			speed = None, fwhm = 1., jitter = False, focus = False):
 		"""
 		Integrate a PSF that is smeared in one direction to an image.
-		
+
 		Parameters
 		----------
 		stars (list):
@@ -69,7 +69,7 @@ class PSF():
 		focus (string):
 			``True`` if focus is to be applied. Default is ``False``. Not
 			implemented.
-		
+
 		Returns
 		-------
 		img (2D array, float):
@@ -86,45 +86,48 @@ class PSF():
 		# Set speed to standard speed if not given as parameter:
 		if speed is None:
 			speed = self.speed
-		
+
 		# Define subpixel buffer. Needs to be large for correct interpolation:
 		self.buffer = np.int(3*fwhm*self.superres)
-		
+
 		# Create smear kernel:
 		smearKernel, r0, c0, r1, c1 = self.makeSmearKernel(
 				integration_time, angle_vel, speed, fwhm)
 		self.kernelShape = smearKernel.shape
-		
+
 		# Get highres PSF:
 		PSFhighres = self.highresPSF(fwhm)
-		
+
 		# TODO: convolve highres PSF with focus and jitter here
-		
+
 		# Convolve the PSF with the smear kernel:
 		highresConvPSF = self.convolvePSF(PSFhighres, smearKernel)
-		
+
 		# Normalise the PRF:
 		highresConvPSF /= np.nansum(highresConvPSF) * self.superres**2
-		
+
 		# Define pixel centered index arrays for the interpolater:
 		PRFrow = np.arange(0.5, self.kernelShape[0] + 0.5)
 		PRFcol = np.arange(0.5, self.kernelShape[1] + 0.5)
-		
+
 		# Center around 0:
 		PRFrow = PRFrow - PRFrow.size / 2
 		PRFcol = PRFcol - PRFcol.size / 2
-		
+
 		# Convert from subpixel to pixel resolution:
 		PRFrow /= self.superres
 		PRFcol /= self.superres
-		
+
 		# Interpolate highresImage:
 		highresImageInterp = RectBivariateSpline(PRFrow, PRFcol, highresConvPSF)
-		
-		# TODO: apply Bayer filter scaling in the loop below, add color to params
-		
+
+		# Preallocate image array:
+		img = np.zeros(self.imshape, dtype=np.float64)
+
+		# Prepare Bayer filter scaling:
+		Bayer_filter = make_bayer_filter(img.shape)
+
 		# Integrate the interpolation object in each pixel:
-		img = np.zeros(self.imshape, dtype='float64')
 		for star in stars:
 			for row in range(self.imshape[0]):
 				for col in range(self.imshape[1]):
@@ -134,10 +137,25 @@ class PSF():
 					# Integrate only significant contributions to avoid artefacts:
 					withinBoundary = highresImageInterp(row_cen, col_cen) > 1e-9
 					if withinBoundary:
+						# Get flux value:
+						# Red:
+						if Bayer_filter[row,col] == 0:
+							Bayer_flux = star[2][0]
+						# Green:
+						elif Bayer_filter[row,col] == 1:
+							Bayer_flux = star[2][1]
+						# Blue:
+						elif Bayer_filter[row,col] == 2:
+							Bayer_flux = star[2][2]
+						else:
+							raise ValueError(
+									'Bayer filter flag must be 0, 1 or 2.')
+						
 						# Integrate normalised interpolation in the current pixel:
-						img[row,col] = highresImageInterp.integral(row_cen-0.5, row_cen+0.5, col_cen-0.5, col_cen+0.5)
-						# Apply Bayer filter flux scaling:
-						img = bayer_scaling(img, star[2])
+						img[row,col] = Bayer_flux * \
+								highresImageInterp.integral(
+									row_cen-0.5, row_cen+0.5,
+									col_cen-0.5, col_cen+0.5)
 
 		return img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp
 

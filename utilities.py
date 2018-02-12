@@ -41,7 +41,7 @@ def star_CCD_speed(pixel_scale, H_ISS=400*1e3, V_ISS=7.66*10e3,
 		Approximate speed of a star on the CCD of Delphini-1 in pixels per 
 		second.
 	"""
-	
+
 	return 360*3600/(2*np.pi*(R_Earth+H_ISS)) * V_ISS / pixel_scale
 
 
@@ -93,7 +93,7 @@ def bvr2rgb_discarded(bvr, A_inv=None, C=None):
 	Andreas Kjær Dideriksen
 	Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
 	"""
-	
+
 	if A_inv is None:
 		# Set constant values from the Park (2016):
 		C_BBG = 0.280
@@ -102,29 +102,29 @@ def bvr2rgb_discarded(bvr, A_inv=None, C=None):
 		C_VGR = -0.064
 		C_RBG = 0.051
 		C_RGR = 0.468
-		
+
 		# Define matrix:
 		A = np.array([[1+C_BBG, -C_BBG+C_BGR, -C_BGR],
 					[C_VBG, 1-C_VBG+C_VGR, -C_VGR],
 					[C_RBG, -C_RBG+C_RGR, 1-C_RGR]])
-	
+
 		# Invert matrix:
 		A_inv = np.linalg.inv(A)
-		
+
 	if C is None:
 		# Set constant values from the Park (2016):
 		B_BZP = -0.291
 		G_BZP = -0.252
 		R_BZP = -0.226
-		
+
 		# Define vector:
 		C = np.array([B_BZP, G_BZP, R_BZP])
-	
+
 	# Calculate and return rgb values:
 	return np.flip((A_inv.dot(bvr - C)))
 
 
-def bayer_scaling(img, flux):
+def make_bayer_filter(img_shape):
 	"""
 	Apply Bayer filter scaling of a normalised image with the level of flux.
 	
@@ -132,24 +132,27 @@ def bayer_scaling(img, flux):
 	
 	Parameters
 	----------
-	img (numpy array):
-		2D image with an even number of rows and columns.
-	flux (list of floats):
-		List with the three values for red, green and blue to scale image.
+	img_shape (tuple):
+		Shape of the image.
 	
 	Returns
 	-------
-	img (numpy array):
-		2D image like the input, but with Bayer filter scaled values.
+	Bayer_flux (numpy array):
+		2D image like the input, but with Bayer filter flags.
 	"""
+
+	# Preallocate:
+	Bayer_flux = np.empty(img_shape, dtype=int)
+
 	# Red:
-	img[1::2,1::2] *= flux[0]
+	Bayer_flux[1::2,1::2] = 0
 	# Green:
-	img[0::2,1::2] *= flux[1]
-	img[1::2,0::2] *= flux[1]
+	Bayer_flux[0::2,1::2] = 1
+	Bayer_flux[1::2,0::2] = 1
 	# Blue:
-	img[0::2,0::2] *= flux[2]
-	return img
+	Bayer_flux[0::2,0::2] = 2
+
+	return Bayer_flux
 
 
 
@@ -171,7 +174,7 @@ def mag2flux(mag, mag_type=None):
 	float: 
 		Corresponding flux value.
 	"""
-	
+
 	# Set magnitude to flux conversion constants for RGB:
 	# TODO: use measured constants for magnitude to flux conversion in RGB
 	mag_consts_RGB = {
@@ -179,6 +182,6 @@ def mag2flux(mag, mag_type=None):
 		"G": 28.24,
 		"B": 28.24
 	}
-	
+
 	return 10**(-0.4*(mag - mag_consts_RGB.get(mag_type, 28.24)))
 
