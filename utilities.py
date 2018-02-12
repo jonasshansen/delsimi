@@ -19,9 +19,9 @@ def star_CCD_speed(pixel_scale, H_ISS=400*1e3, V_ISS=7.66*10e3,
 	"""
 	Estimate the speed of a star on the Delphini-1 CCD.
 	
-	The speed of a star on the CCD of Delphini-1 is estimated fromknowledge of
+	The speed of a star on the CCD of Delphini-1 is estimated from knowledge of
 	the pixel size, and the orbit height and speed of the ISS, which Delphini-1
-	is assumed to follow.
+	is assumed to follow. The orbit is assumed circular.
 	
 	Parameters
 	----------
