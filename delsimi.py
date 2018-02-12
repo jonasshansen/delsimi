@@ -24,10 +24,11 @@ from psf import PSF
 class delsimi(object):
 	def __init__(self, input_dir='../infiles',
 					output_dir='../outfiles',
+					overwrite=True,
 					coord_cen=[0.,0.],
 					integration_time=0.1,
 					angle_vel=0.,
-					angle_sat=0.,):
+					angle_sat=0.):
 		"""
 		Simulate stellar images from Delphini-1.
 
@@ -42,6 +43,8 @@ class delsimi(object):
 			Input file directory. Default is ``'../infiles'``.
 		output_dir (string):
 			Output file directory. Default is ``'../outfiles'``.
+		overwrite (boolean):
+			``True`` if to overwrite FITS images in output.
 		coord_cen (list of floats):
 			Right ascension and declination coordinate center at the midtime of
 			exposure.
@@ -110,10 +113,10 @@ class delsimi(object):
 		"""
 
 
-
 		""" Set constants """
 		self.input_dir = input_dir
 		self.output_dir = output_dir
+		self.overwrite = overwrite
 
 		self.coord_cen = coord_cen
 		self.integration_time = integration_time
@@ -197,16 +200,28 @@ class delsimi(object):
 		w.wcs.cdelt /= 2
 
 
-		""" Export to fits """
-		# Instantiate primary header data unit:
+		""" Export binned image to fits """
+		# Make primary header data unit:
 		header = w.to_header()
 		hdu = fits.PrimaryHDU(data=img_binned, header=header)
-
-		# TODO: Save data to fits file:
+		hdu.header['NAXIS'] = (2, 'Number of data dimension')
+		hdu.header['NAXIS1'] = (np.shape(img_binned)[1], 'Number of pixel columns')
+		hdu.header['NAXIS2'] = (np.shape(img_binned)[0], 'Number of pixel rows')
+		
+		# Write image to fits file:
+		hdu.writeto(os.path.join(self.output_dir, 'image.fits'), 
+			overwrite=self.overwrite)
 
 
 		""" Export catalog to ASCII file """
-		# TODO: Save catalog to file:
+		# Save catalog to file:
+		catalog_output_dir = os.path.join(self.output_dir, 'catalog.txt')
+		print('Writing catalog to '+catalog_output_dir)
+		print(catalog)
+		np.savetxt(catalog_output_dir,
+			np.asarray(catalog),
+			delimiter='\t',
+			header='    '.join(catalog.colnames))
 
 
 
@@ -249,9 +264,9 @@ class delsimi(object):
 			 - R_Bayer (float): Bayer filter R magnitude of stars.
 			 - G_Bayer (float): Bayer filter G magnitude of stars.
 			 - B_Bayer (float): Bayer filter B magnitude of stars.
-			 - flux_R (float): Bayer filter R flux of stars.
-			 - flux_G (float): Bayer filter G flux of stars.
-			 - flux_B (float): Bayer filter B flux of stars.
+			 - flux_R (int): Bayer filter R flux of stars in electrons.
+			 - flux_G (int): Bayer filter G flux of stars in electrons.
+			 - flux_B (int): Bayer filter B flux of stars in electrons.
 		w (astropy WCS solution):
 			World Coordinate System solution for the current position. Can be
 			used to transform from ``(ra,dec)`` to pixel ``(row,col)`` with 
@@ -261,8 +276,8 @@ class delsimi(object):
 		if cat_input is None:
 			# Generate two test stars:
 			cat_input = 	[np.array([0, 1]),   # starid
-				np.array([20., 20.01]),      # rigth ascension
-				np.array([20., 20.015]),     # declination
+				np.array([0., 2.0]),      # rigth ascension
+				np.array([0., 2.0]),     # declination
 				np.array([4., 6.5]),         # R magnitude (Cousins)
 				np.array([5., 5.5]),         # V magnitude (Johnson)
 				np.array([6., 4.5])]         # B magnitude (Johnson)
@@ -308,7 +323,7 @@ class delsimi(object):
 			dtype=('int64', 'float64', 'float64', 'float64', 'float64',
 					'float32', 'float32', 'float32',
 					'float32', 'float32', 'float32',
-					'float64', 'float64', 'float64')
+					'int64', 'int64', 'int64')
 		)
 		
 		return catalog, w
