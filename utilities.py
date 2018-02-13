@@ -128,17 +128,30 @@ def make_bayer_filter(img_shape):
 	"""
 	Apply Bayer filter scaling of a normalised image with the level of flux.
 	
-	The Bayer pattern used here is BGGR.
-	
+	The Bayer pattern used here is BGGR, which corresponds to the following
+	pixel filter setup for a 4x6 pixel sensor::
+
+		B G B G B G
+		G R G R G R
+		B G B G B G
+		G R G R G R
+
 	Parameters
 	----------
 	img_shape (tuple):
 		Shape of the image.
-	
+
 	Returns
 	-------
 	Bayer_flux (numpy array):
-		2D image like the input, but with Bayer filter flags.
+		2D image the same shape as the input, but with Bayer filter flags, 
+		the structure of which is	visualized using the filter example above as 
+		an example::
+		
+			2 1 2 1 2 1
+			1 0 1 0 1 0
+			2 1 2 1 2 1
+			1 0 1 0 1 0
 	"""
 
 	# Preallocate:
