@@ -352,21 +352,23 @@ class PSF():
 if __name__ == '__main__':
 	import matplotlib.pyplot as plt
 	
-	# Define background:
-	bkg = np.zeros([50,80],dtype=float)
-	
 	# Make PSF class instance:
-	dpsf = PSF(imshape=bkg.shape, superres=10)
+	dpsf = PSF(imshape=[50,80], superres=10)
 	
 	# Evaluate PSF with specified parameters:
-	star = [20,20,1]
-	integrationTime=3
-	angle=np.pi/7
-	speed = 10
-	fwhm = 1
-	img, smearKernel, PSFhighres, highresImage, highresImageInterp = dpsf.evaluate(
-			star=star, integrationTime=integrationTime, angle=angle, 
-			speed=speed, fwhm=fwhm)
+	stars = [[20.,20.,[3., 4., 5.]],
+			[25.,25.,[3.5, 4.5, 5.5]]]
+	integration_time = 3 # seconds
+	angle_vel = np.pi/7 # radians
+	speed = 10 # pixel per second
+	fwhm = 1 # pixel
+	img, smearKernel, PSFhighres, highresImage, highresImageInterp = \
+		dpsf.integrate_to_image(
+			stars=stars, 
+			integration_time=integration_time, 
+			angle_vel=angle_vel, 
+			speed=speed, 
+			fwhm=fwhm)
 	
 	print("Buffer is %s subpixels" % dpsf.buffer)
 	
