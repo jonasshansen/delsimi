@@ -350,6 +350,7 @@ class PSF():
 if __name__ == '__main__':
 	import matplotlib.pyplot as plt
 	from utilities import mag2flux
+	import string
 
 	# Make PSF class instance:
 	dpsf = PSF(imshape=[50,80], superres=10)
@@ -381,14 +382,18 @@ if __name__ == '__main__':
 	ax2.set_title('Smear kernel')
 
 	ax3.imshow(highresImage, origin='lower')
-	ax3.set_title('High res. convolved PRF')
+	ax3.set_title('High res. convolved PSF')
 
 	ax4.imshow(PSFhighres, origin='lower')
-	ax4.set_title('High resolution PRF')
+	ax4.set_title('High resolution PSF')
 
 	for ax in (ax2, ax3, ax4):
 		ax.set_xlabel('Subpixel column')
 		ax.set_ylabel('Subpixel row')
+
+	for n,ax in enumerate((ax1, ax2, ax3, ax4)):
+		ax.text(0.05, 0.75, string.ascii_uppercase[n], transform=ax.transAxes, 
+			size=20, weight='bold', color='w')
 
 	# Make space for the subplot titles:
 	fig.subplots_adjust(hspace=0.5, wspace=0.5)
