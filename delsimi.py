@@ -56,32 +56,6 @@ class delsimi(object):
 		angle_sat (float):
 			Angle of satellite in radians with respect to the ecliptic 
 			coordinates. Default is ``0.``.
-		
-
-		Future Extensions
-		-----------------
-		This is a list of possible future extensions to the code. The list is
-		largely inspired by the SPyFFI manual which is linked to here:
-			
-			https://github.com/TESScience/SPyFFI
-			
-		- Additional stars
-		- PSF length inferred from estimated satellite speed and exposure time
-		- Catalog stars
-		- Simple noise
-		- Focus change
-		- Jitter
-		- Pixel sensitivity variations
-		- Realistic constant used for magnitude to flux conversion (color dependent)
-		- Realistic Johnson-Cousins BVR to RGB magnitude conversion constants
-		- Background
-		- Photon noise
-		- Readout smear
-		- Rolling shutter
-		- Saturated pixels
-		- Cosmic rays
-		- Position variable PSF (not compatible with convolution)
-		- Pixel-integrated Gaussian at high time resolution to replace convolution?
 
 		PSF
 		---
@@ -97,7 +71,6 @@ class delsimi(object):
 		binning is implemented in the code, assuming no cromatic abberation, 
 		which changes the PSF based on wavelength.
 
-
 		Code Authors
 		------------
 		Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com (extensions, see all
@@ -105,7 +78,6 @@ class delsimi(object):
 
 		Carolina von Essen, cessen@phys.au.dk (initial idea, see first commit on
 		Github for code)
-
 
 		Online Repository
 		-----------------
