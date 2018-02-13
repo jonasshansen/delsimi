@@ -186,20 +186,23 @@ class delsimi(object):
 		img /= self.gain
 
 
-		""" Apply binning """
+		""" Apply 2x2 pixel binning """
 		# Apply sum binning of Bayer pixels using the method linked to below:
 		# https://stackoverflow.com/questions/14916545/numpy-rebinning-a-2d-array
 		row_bin = 2
 		col_bin = 2
+		row_col_bin = np.array([row_bin, col_bin])
 		img_view = img.reshape(img.shape[0] // row_bin, row_bin,
 							img.shape[1] // col_bin, col_bin)
 		img_binned = img_view.sum(axis=3).sum(axis=1)
 
 		# Update the WCS solution:
-		w.wcs.crpix /= 2
-		w.wcs.cdelt /= 2
+		w.wcs.crpix = np.divide(w.wcs.crpix, row_col_bin)
+		w.wcs.cdelt = np.divide(w.wcs.cdelt, row_col_bin)
 
-		# TODO: update catalog
+		# Update catalog positions
+		catalog['row'] /= row_bin
+		catalog['col'] /= col_bin
 
 
 		""" Export binned image to fits """
