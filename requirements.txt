@@ -1,6 +1,5 @@
 scipy
 numpy
-PIL
 matplotlib
 scikit-image
 astropy
