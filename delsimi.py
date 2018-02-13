@@ -245,12 +245,16 @@ class delsimi(object):
 
 		if cat_input is None:
 			# Generate two test stars:
-			cat_input = 	[np.array([0, 1]),   # starid
-				np.array([0., 2.0]),      # rigth ascension
-				np.array([0., 2.0]),     # declination
-				np.array([4., 6.5]),         # R magnitude (Cousins)
-				np.array([5., 5.5]),         # V magnitude (Johnson)
-				np.array([6., 4.5])]         # B magnitude (Johnson)
+			cat_input = 	[np.array([0, 1]),     # starid
+				np.array([self.coord_cen[0], 
+						self.coord_cen[0] + 
+						10/self.pixel_scale]),# rigth ascension
+				np.array([self.coord_cen[1], 
+						self.coord_cen[0] + 
+						5/self.pixel_scale]), # declination
+				np.array([4., 6.5]),           # R magnitude (Cousins)
+				np.array([5., 5.5]),           # V magnitude (Johnson)
+				np.array([6., 4.5])]           # B magnitude (Johnson)
 
 		# Extract parameters from catalog input:
 		starid, RA, DEC, R_Cousins, V_Johnson, B_Johnson = cat_input
