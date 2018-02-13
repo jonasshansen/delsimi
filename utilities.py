@@ -14,7 +14,7 @@ def rvb2rgb(rvb):
 	return rvb
 
 
-def star_CCD_speed(pixel_scale, H_ISS=400*1e3, V_ISS=7.66*10e3, 
+def star_CCD_speed(pixel_scale, H_ISS=400*1e3, V_ISS=7.66*1e3, 
 				R_Earth=6371*1e3):
 	"""
 	Estimate the speed of a star on the Delphini-1 CCD.
@@ -31,7 +31,7 @@ def star_CCD_speed(pixel_scale, H_ISS=400*1e3, V_ISS=7.66*10e3,
 		Approximate height of the ISS orbit in meters. Default is ``400*1e3``.
 	V_ISS (float):
 		Approximate speed of the ISS in orbit in meters per second. Default is 
-		``7.66*10e3``.
+		``7.66*1e3``.
 	R_Earth (float):
 		Approximate radius of Earth in meters. Default is ``6371*1e3``.
 	
