@@ -85,9 +85,9 @@ class delsimi(object):
 		self.overwrite = overwrite
 
 		self.coord_cen = coord_cen
-		self.integration_time = integration_time
-		self.angle_vel = angle_vel
-		self.angle_sat = angle_sat
+		self.integration_time = float(integration_time)
+		self.angle_vel = float(angle_vel)
+		self.angle_sat = float(angle_sat)
 
 		# Set gain:
 		self.gain = 25 # electrons per LSB or ADU
