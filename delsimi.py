@@ -267,7 +267,7 @@ class delsimi(object):
 		w.wcs.ctype = ["RA---AIR", "DEC--AIR"]
 
 		# WCS conversion from (ra,dec) to pixel (row,col):
-		row_col = w.wcs_world2pix([RA, DEC], 0)
+		row_col = w.wcs_world2pix(np.transpose(np.array([RA, DEC])), 0)
 		CCD_row = np.array([coord[0] for coord in row_col])
 		CCD_col = np.array([coord[1] for coord in row_col])
 
