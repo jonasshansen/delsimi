@@ -23,6 +23,12 @@ located in psf.py to define and integrate the point spread function. Various
 functions used by either class are available in utilities.py.
 
 
+I/O
+---
+The input and output are loaded and written to directories ''infiles'' and 
+''outfiles'', which should be located in the parent directory of this code.
+
+
 RUNNING
 -------
 The code is designed to be run on Ubuntu 16.04 with Python 3.5 using the 
@@ -42,7 +48,7 @@ The file run_delsimi.py can be run from a bash terminal using this command::
 This call will generate a FITS file image.fits in the output directory along
 with an ASCII file catalog.txt containing a description of the catalog of stars
 used to create the image. The stars in the image will be two default stars.
-Several parameters can also be passed, e.g.:
+Several parameters can also be passed, e.g.::
 	
 	python run_delsimi.py -c [45,60] -t 5. -v 0.1 -s 0.2
 
@@ -50,11 +56,9 @@ This call will place the "viewfinder" at an angle of 0.2 radians at right
 ascension 45 and declination 60. The two default stars will be integrated for
 five seconds, and they will move at an angle of 0.1 in the image.
 
+Show all available parameters by executing::
 
-I/O
----
-The input and output are loaded and written to directories ''infiles'' and 
-''outfiles'', which should be located in the parent directory of this code.
+	python run_delsimi.py --help
 
 
 FUTURE EXTENSIONS
