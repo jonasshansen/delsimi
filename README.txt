@@ -14,8 +14,17 @@ on the development of the various method see the file protocol.pdf.
 .. note:: Angle definitions are still in development!
 
 
+STRUCTURE
+---------
+The code is split in a run file run_delsimi.py which can be executed from the 
+commandline as described in `RUNNING`_. This file runs the Delsimi class located
+in delsimi.py. This class defines basic parameters, but uses the PSF class 
+located in psf.py to define and integrate the point spread function. Various
+functions used by either class are available in utilities.py.
+
+
 RUNNING
-=======
+-------
 The code is designed to be run on Ubuntu 16.04 with Python 3.5 using the 
 packages listed in the file requirements.txt. The following procedure describes 
 how to run the simulation.
@@ -25,7 +34,7 @@ how to run the simulation.
 3. In a terminal in the simulation directory run the file run_delsimi.py.
 
 HOW TO run_delsimi
-------------------
+++++++++++++++++++
 The file run_delsimi.py can be run from a bash terminal using this command::
 	
 	python run_delsimi.py
@@ -43,7 +52,7 @@ five seconds, and they will move at an angle of 0.1 in the image.
 
 
 I/O
-===
+---
 The input and output are loaded and written to directories ''infiles'' and 
 ''outfiles'', which should be located in the parent directory of this code.
 
