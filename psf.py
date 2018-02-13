@@ -11,7 +11,6 @@ from scipy.special import erf
 from scipy.signal import convolve2d
 from scipy.interpolate import RectBivariateSpline
 from skimage.draw import line_aa
-#from scipy.interpolate import splprep
 
 from utilities import make_bayer_filter
 
@@ -150,7 +149,6 @@ class PSF():
 						else:
 							raise ValueError(
 									'Bayer filter flag must be 0, 1 or 2.')
-						
 						# Integrate normalised interpolation in the current pixel:
 						img[row,col] += Bayer_flux * integration_time * \
 								highresImageInterp.integral(
@@ -351,17 +349,18 @@ class PSF():
 
 if __name__ == '__main__':
 	import matplotlib.pyplot as plt
-	
+	from utilities import mag2flux
+
 	# Make PSF class instance:
 	dpsf = PSF(imshape=[50,80], superres=10)
-	
+
 	# Evaluate PSF with specified parameters:
-	stars = [[20.,20.,[3., 4., 5.]],
-			[25.,25.,[3.5, 4.5, 5.5]]]
+	stars = [[20.,20.,[mag2flux(3.), mag2flux(4.), mag2flux(5.)]],
+			[27.,50.,[mag2flux(5.5), mag2flux(4.5), mag2flux(3.5)]]]
 	integration_time = 3 # seconds
-	angle_vel = np.pi/7 # radians
+	angle_vel = np.pi/5.7 # radians
 	speed = 10 # pixel per second
-	fwhm = 1 # pixel
+	fwhm = 1.5 # pixel
 	img, smearKernel, PSFhighres, highresImage, highresImageInterp = \
 		dpsf.integrate_to_image(
 			stars=stars, 
@@ -369,31 +368,27 @@ if __name__ == '__main__':
 			angle_vel=angle_vel, 
 			speed=speed, 
 			fwhm=fwhm)
-	
-	print("Buffer is %s subpixels" % dpsf.buffer)
-	
+
 	# Plot:
 	fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
-	
+
 	ax1.imshow(img, origin='lower')
 	ax1.set_xlabel('Pixel column')
 	ax1.set_ylabel('Pixel row')
 	ax1.set_title('Pixel-integrated image')
-	
+
 	ax2.imshow(smearKernel, origin='lower')
 	ax2.set_title('Smear kernel')
-	
+
 	ax3.imshow(highresImage, origin='lower')
 	ax3.set_title('High res. convolved PRF')
-	
+
 	ax4.imshow(PSFhighres, origin='lower')
 	ax4.set_title('High resolution PRF')
-	
+
 	for ax in (ax2, ax3, ax4):
 		ax.set_xlabel('Subpixel column')
 		ax.set_ylabel('Subpixel row')
-	
-	# Make space for the subplot titles:
-	fig.subplots_adjust(hspace=0.5)
 
-#	np.savetxt('img.out', 1e9*img)
+	# Make space for the subplot titles:
+	fig.subplots_adjust(hspace=0.5, wspace=0.5)
