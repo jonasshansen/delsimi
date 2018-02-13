@@ -261,15 +261,15 @@ class delsimi(object):
 
 		# WCS initialisation:
 		w = WCS(naxis=2)
-		w.wcs.crpix = self.ccd_shape/2
+		w.wcs.crpix = self.ccd_shape[::-1]/2
 		w.wcs.cdelt = [self.pixel_scale/3600, self.pixel_scale/3600]
 		w.wcs.crval = self.coord_cen
 		w.wcs.ctype = ["RA---AIR", "DEC--AIR"]
 
 		# WCS conversion from (ra,dec) to pixel (row,col):
-		row_col = w.wcs_world2pix(np.transpose(np.array([RA, DEC])), 0)
-		CCD_row = np.array([coord[0] for coord in row_col])
-		CCD_col = np.array([coord[1] for coord in row_col])
+		col_row = w.wcs_world2pix(np.transpose(np.array([RA, DEC])), 0)
+		CCD_row = np.array([coord[1] for coord in col_row])
+		CCD_col = np.array([coord[0] for coord in col_row])
 
 		# Collect star parameters in list for catalog:
 		cat = [starid, RA, DEC, CCD_row, CCD_col,
