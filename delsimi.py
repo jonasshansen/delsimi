@@ -6,16 +6,10 @@ Delsimi image simulation code.
 @author: Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
 """
 
-#import matplotlib.pyplot as plt
-#import math as mt
-#import matplotlib
-#from scipy import misc
-from PIL import Image
 import os
 import numpy as np
-import scipy
 from astropy.io import fits
-from astropy.table import Table, Column
+from astropy.table import Table
 from astropy.wcs import WCS
 
 from utilities import rvb2rgb, star_CCD_speed, mag2flux
@@ -110,6 +104,7 @@ class delsimi(object):
 
 		""" Load Catalog """
 		# TODO: add input catalog loading here
+		# TODO: add limitation of catalog stars from position and velocity
 
 		# Generate astropy table and WCS solution:
 		catalog, w = self.make_catalog(cat_input=None)
@@ -147,11 +142,8 @@ class delsimi(object):
 		read_noise = self.integration_time * np.random.normal(
 						loc=0., scale=6., size=img.shape)
 
-		# White noise to simulate background, faint stars and other sources:
-		other_noise = np.random.normal(loc=1e3, scale=1e5, size=img.shape)
-
 		# Apply noise to image:
-		img += dark_current + read_noise + other_noise
+		img += dark_current + read_noise
 
 
 		""" Convert from electrons to digital units """
