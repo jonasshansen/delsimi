@@ -292,7 +292,6 @@ class delsimi(object):
 		starid, RA, DEC, R_Cousins, V_Johnson, B_Johnson = cat_input
 
 		# WCS initialisation:
-		# FIXME: binning and wcs solution problem
 		w = WCS(naxis=2)
 		w.wcs.crpix = self.ccd_shape/2
 		w.wcs.cdelt = [self.pixel_scale/3600, self.pixel_scale/3600]
