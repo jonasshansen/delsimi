@@ -22,6 +22,10 @@ in delsimi.py. This class defines basic parameters, but uses the PSF class
 located in psf.py to define and integrate the point spread function. Various
 functions used by either class are available in utilities.py.
 
+UML diagrams are shown in packages.pdf and classes.pdf. They are created using
+pyreverse as guided by 
+https://twigstechtips.blogspot.dk/2014/09/python-visualise-your-class-hierarchy.html
+
 
 I/O
 ---
