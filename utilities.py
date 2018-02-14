@@ -198,3 +198,28 @@ def mag2flux(mag, mag_type=None):
 
 	return 10**(-0.4*(mag - mag_consts_RGB.get(mag_type, 28.24)))
 
+
+def make_astroquery(ra, dec, radius = 3):
+	# Make astroquery:
+	from astroquery.simbad import Simbad
+	customSimbad = Simbad()
+	# We've seen errors where ra_prec was NAN, but it's an int: that's a problem
+	# this is a workaround we adapted
+	customSimbad.add_votable_fields('ra(d)','dec(d)','flux(R)','flux(V)','flux(B)')
+	customSimbad.remove_votable_fields('coordinates')
+	from astropy import coordinates
+	C = coordinates.SkyCoord(ra,dec,unit=('deg','deg'), frame='icrs')
+	result = customSimbad.query_region(C, radius=np.str(radius)+' degrees')
+	# FIXME: coordinate error on pleiades using
+	# ra = 24.11666
+	# dec = 3.783333
+	# with the calls above. Find help in the link below:
+	# http://docs.astropy.org/en/stable/api/astropy.coordinates.SkyCoord.html
+	
+	
+	# Select only the very brightest objects:
+	result[result['FLUX_V']<7]
+	
+	# Convert output to usable format, filling out missing information:
+	
+
