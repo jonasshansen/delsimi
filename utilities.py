@@ -199,27 +199,49 @@ def mag2flux(mag, mag_type=None):
 	return 10**(-0.4*(mag - mag_consts_RGB.get(mag_type, 28.24)))
 
 
-def make_astroquery(ra, dec, radius = 3):
+def make_astroquery(ra=None, dec=None, radius=None, maxVmag=6.):
+	"""
+	Make a Simbad query for stars with a given maximum V magnitude in a radius 
+	around a given position.
+	
+	Parameters
+	----------
+	ra (float):
+		Right ascension in degrees (ICRSd).
+	dec (float):
+		Declination in degrees (ICRSd).
+	radius (int):
+		Maximum radius in degrees where to search around the specified (ra,dec)
+		position.
+	maxVmag (float):
+		Maximum V magnitude of objects to include.
+	
+	Returns
+	-------
+	(numpy array):
+		Array containing the columns (ra, dec, R, V, B), where the last three
+		values are the Johnson-Cousins magnitudes of the given stars.
+	"""
+	# Use Pleiades cluster (ra,dec) in ICRSd found using Aladin as default:
+	if ra or dec is None:
+		ra, dec = (56.75,24.11670)
+	if radius is None:
+		radius = 3
+	
 	# Make astroquery:
 	from astroquery.simbad import Simbad
 	customSimbad = Simbad()
-	# We've seen errors where ra_prec was NAN, but it's an int: that's a problem
-	# this is a workaround we adapted
 	customSimbad.add_votable_fields('ra(d)','dec(d)','flux(R)','flux(V)','flux(B)')
 	customSimbad.remove_votable_fields('coordinates')
+	
 	from astropy import coordinates
 	C = coordinates.SkyCoord(ra,dec,unit=('deg','deg'), frame='icrs')
 	result = customSimbad.query_region(C, radius=np.str(radius)+' degrees')
-	# FIXME: coordinate error on pleiades using
-	# ra = 24.11666
-	# dec = 3.783333
-	# with the calls above. Find help in the link below:
-	# http://docs.astropy.org/en/stable/api/astropy.coordinates.SkyCoord.html
 	
+	# Select only objects brighter than some V magnitude:
+	result = result[result['FLUX_V']<maxVmag]
 	
-	# Select only the very brightest objects:
-	result[result['FLUX_V']<7]
-	
-	# Convert output to usable format, filling out missing information:
-	
+	# Convert output to numpy array:
+	return np.transpose(np.array([result['RA_d'],result['DEC_d'],
+					result['FLUX_R'],result['FLUX_V'],result['FLUX_B']]))
 
