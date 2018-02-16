@@ -115,13 +115,18 @@ class delsimi(object):
 		cat = make_astroquery(ra=coord_cen[0], dec=coord_cen[1],
 						radius=radius, maxVmag=6.)
 
+		# Set R values to V values if the R values are NaN:
+		nan_pos = np.isnan(cat[:,3])
+		cat[:,3][nan_pos] = cat[:,4][nan_pos]
+
 		# Convert catalog to format used by make_catalog:
 		cat_input = [np.arange(cat.shape[0], dtype=int)] # starid, internal
 		# Append ra, dec, R, V, B arrays:
-		cat_input.append([cat[:,col] for col in range(cat.shape[1])]) 
+		for col in range(cat.shape[1]):
+			cat_input.append(cat[:,col])
 
 		# Generate astropy table and WCS solution:
-		catalog, w = self.make_catalog(cat_input=None)
+		catalog, w = self.make_catalog(cat_input=cat_input)
 
 
 		""" Make image """
