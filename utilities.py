@@ -7,7 +7,8 @@ Utility functions for the delsimi simulation code.
 """
 
 import numpy as np
-
+from astroquery.simbad import Simbad
+from astropy import coordinates
 
 
 def rvb2rgb(rvb):
@@ -229,12 +230,10 @@ def make_astroquery(ra=None, dec=None, radius=None, maxVmag=6.):
 		radius = 3
 	
 	# Make astroquery:
-	from astroquery.simbad import Simbad
 	customSimbad = Simbad()
 	customSimbad.add_votable_fields('ra(d)','dec(d)','flux(R)','flux(V)','flux(B)')
 	customSimbad.remove_votable_fields('coordinates')
 	
-	from astropy import coordinates
 	C = coordinates.SkyCoord(ra,dec,unit=('deg','deg'), frame='icrs')
 	result = customSimbad.query_region(C, radius=np.str(radius)+' degrees')
 	
