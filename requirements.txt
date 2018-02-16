@@ -4,3 +4,4 @@ matplotlib
 scikit-image
 astropy
 string
+astroquery

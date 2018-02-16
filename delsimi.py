@@ -12,24 +12,23 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy.wcs import WCS
 
-from utilities import rvb2rgb, star_CCD_speed, mag2flux
+from utilities import rvb2rgb, star_CCD_speed, mag2flux, make_astroquery
 from psf import PSF
 
 class delsimi(object):
 	def __init__(self, input_dir='../infiles',
 					output_dir='../outfiles',
 					overwrite=True,
-					coord_cen=[0.,0.],
+					coord_cen=[56.75,24.11670],
 					integration_time=0.1,
 					angle_vel=0.,
 					angle_sat=0.):
 		"""
 		Simulate stellar images from Delphini-1.
 
-		It is assumed that the camera pointing is orthogonal to the tangent of
-		the orbit.
+		It is assumed that the camera pointing is exactly radially outwards.
 
-		The output images will be in digital units.
+		The output image scale will be in digital units.
 
 		Parameters
 		----------
@@ -41,9 +40,9 @@ class delsimi(object):
 			``True`` if to overwrite FITS images in output.
 		coord_cen (list of floats):
 			Right ascension and declination coordinate center at the midtime of
-			exposure.
+			exposure. Default is the ICRSd of the Pleiades cluster.
 		integration_time (float):
-			CCD integration time in seconds. Default is ``30.``.
+			CCD integration time in seconds. Default is ``0.1``.
 		angle_vel (float):
 			Angle of velocity in radians with respect to the ecliptic 
 			coordinates. Default is ``0.``.
@@ -101,19 +100,36 @@ class delsimi(object):
 		conv_const = 206.265 # convert micrometer to mm and radians to arcsec
 		self.pixel_scale = pixel_size / focal_length * conv_const # arcsec/pixel
 
-
-		""" Load Catalog """
-		# TODO: add input catalog loading here
-		# TODO: add limitation of catalog stars from position and velocity
-
-		# Generate astropy table and WCS solution:
-		catalog, w = self.make_catalog(cat_input=None)
-
-
-		""" Make image """
 		# Calculate average speed of a star on the CCD in pixel units:
 		speed = star_CCD_speed(self.pixel_scale)
 
+
+		""" Load Catalog """
+		# Determine maximum possible pixel radius for a star that is in frame:
+		max_pixel_dist = 0.5* speed * self.integration_time \
+						+ np.linalg.norm(np.array(self.ccd_shape)/2)
+		# Convert to degrees and round up to nearest integer:
+		radius = np.int(np.ceil(max_pixel_dist*self.pixel_scale/3600))
+
+		# Make an astroquery within radius with max V mag 6:
+		cat = make_astroquery(ra=coord_cen[0], dec=coord_cen[1],
+						radius=radius, maxVmag=6.)
+
+		# Set R values to V values if the R values are NaN:
+		nan_pos = np.isnan(cat[:,2])
+		cat[:,2][nan_pos] = cat[:,3][nan_pos]
+
+		# Convert catalog to format used by make_catalog:
+		cat_input = [np.arange(cat.shape[0], dtype=int)] # starid, internal
+		# Append ra, dec, R, V, B arrays:
+		for col in range(cat.shape[1]):
+			cat_input.append(cat[:,col])
+
+		# Generate astropy table and WCS solution:
+		catalog, w = self.make_catalog(cat_input=cat_input)
+
+
+		""" Make image """
 		# Instantiate PSF class:
 		dpsf = PSF(imshape=self.ccd_shape, superres=10)
 

@@ -7,7 +7,8 @@ Utility functions for the delsimi simulation code.
 """
 
 import numpy as np
-
+from astroquery.simbad import Simbad
+from astropy import coordinates
 
 
 def rvb2rgb(rvb):
@@ -197,4 +198,49 @@ def mag2flux(mag, mag_type=None):
 	}
 
 	return 10**(-0.4*(mag - mag_consts_RGB.get(mag_type, 28.24)))
+
+
+def make_astroquery(ra=None, dec=None, radius=None, maxVmag=6.):
+	"""
+	Make a Simbad query for stars with a given maximum V magnitude in a radius 
+	around a given position.
+	
+	Parameters
+	----------
+	ra (float):
+		Right ascension in degrees (ICRSd).
+	dec (float):
+		Declination in degrees (ICRSd).
+	radius (int):
+		Maximum radius in degrees where to search around the specified (ra,dec)
+		position.
+	maxVmag (float):
+		Maximum V magnitude of objects to include.
+	
+	Returns
+	-------
+	(numpy array):
+		Array containing the columns (ra, dec, R, V, B), where the last three
+		values are the Johnson-Cousins magnitudes of the given stars.
+	"""
+	# Use Pleiades cluster (ra,dec) in ICRSd found using Aladin as default:
+	if ra or dec is None:
+		ra, dec = (56.75,24.11670)
+	if radius is None:
+		radius = 3
+	
+	# Make astroquery:
+	customSimbad = Simbad()
+	customSimbad.add_votable_fields('ra(d)','dec(d)','flux(R)','flux(V)','flux(B)')
+	customSimbad.remove_votable_fields('coordinates')
+	
+	C = coordinates.SkyCoord(ra,dec,unit=('deg','deg'), frame='icrs')
+	result = customSimbad.query_region(C, radius=np.str(radius)+' degrees')
+	
+	# Select only objects brighter than some V magnitude:
+	result = result[result['FLUX_V']<maxVmag]
+	
+	# Convert output to numpy array:
+	return np.transpose(np.array([result['RA_d'],result['DEC_d'],
+					result['FLUX_R'],result['FLUX_V'],result['FLUX_B']]))
 

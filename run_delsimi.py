@@ -24,7 +24,7 @@ if __name__ == '__main__':
 			default=True)
 	parser.add_argument('-c', '--coord_cen', 
 			help='Coordinate center at the midtime of exposure.',
-			default=[0.,0.])
+			default=[56.75,24.11670])
 	parser.add_argument('-t', '--integration_time', 
 			help='Integration (exposure) time in seconds.',
 			default=1.)
