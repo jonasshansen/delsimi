@@ -9,8 +9,10 @@ This code serves to simulate astronomy images from the Delphini-1 satellite.
 For information about this satellite see http://projects.au.dk/ausat/delphini1/.
 This file explains the structure of the code and how to run it. For information
 on the development of the various method see the file protocol.pdf.
+The protocol does not contain a description of the recently added astroquery
+call which facilitates the simple creation of sky images. The default 
+coordinates are those of the Pleiades cluster.
 
-.. note:: The code does not yet support input catalog stars!
 .. note:: Angle definitions are still in development!
 
 
