@@ -19,7 +19,7 @@ class delsimi(object):
 	def __init__(self, input_dir='../infiles',
 					output_dir='../outfiles',
 					overwrite=True,
-					coord_cen=[56.75.,24.11670.],
+					coord_cen=[56.75,24.11670],
 					integration_time=0.1,
 					angle_vel=0.,
 					angle_sat=0.):
@@ -106,7 +106,7 @@ class delsimi(object):
 
 		""" Load Catalog """
 		# Determine maximum possible pixel radius for a star that is in frame:
-		max_pixel_dist = 0.5* speed * self.integation_time \
+		max_pixel_dist = 0.5* speed * self.integration_time \
 						+ np.linalg.norm(np.array(self.ccd_shape)/2)
 		# Convert to degrees and round up to nearest integer:
 		radius = np.int(np.ceil(max_pixel_dist*self.pixel_scale/3600))
