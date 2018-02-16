@@ -72,7 +72,6 @@ FUTURE EXTENSIONS
 Several extensions are proposed in the following which is largely inspired by 
 the SPyFFI manual (<https://github.com/TESScience/SPyFFI>`_).
 - Pixel-integrated Gaussian at high time resolution to replace convolution?
-- Catalog stars
 - Position variable PSF (not compatible with convolution)
 - Realistic constant used for magnitude to flux conversion (color dependent)
 - Realistic Johnson-Cousins BVR to RGB magnitude conversion constants
