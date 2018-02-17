@@ -11,38 +11,167 @@ from scipy.special import erf
 from scipy.signal import convolve2d
 from scipy.interpolate import RectBivariateSpline
 from skimage.draw import line_aa
+import multiprocessing
 
 from utilities import make_bayer_filter
 
 class PSF():
-	def __init__(self, imshape, superres = 10, rgb_filter = 'bggr'):
+	def __init__(self, imshape):
 		"""
 		Approximate the PSF in stellar images from Delphini-1.
-		
+
+		Parameters
+		----------
+		imshape (tuple): 
+			Shape of image in pixels.
+
 		Future Extensions
 		-----------------
 		Linear filters for convolution with smear and jitter:
 		They posses additivity (L[f+g] = L[f] + L[g]) and homogeneity (L[cf] =
 		cL[f], where c is a constant) according to Bogges and Narcowich 2009, 
 		p. 110.
-		
+
 		Use the following sources for ideas on applying smear and jitter:
 		https://www.osapublishing.org/ao/fulltext.cfm?uri=ao-32-32-6503&id=40363
 		https://github.com/TESScience/SPyFFI/blob/master/PSF.py
 		https://github.com/TESScience/SPyFFI/blob/master/Jitter.py
-		
+
 		Code Author
 		-----------
 		Jonas Svenstrup Hansen, jonas.svenstrup@gmail.com
 		"""
 		self.imshape = np.array(imshape) # shape of image in pixels (row, col)
-		self.superres = superres # subpixel resolution
-		self.rgb_filter = rgb_filter
+
+
+	def evaluate(self, stars, integration_time, angle_vel, speed=None, fwhm=1,
+			time_res=50.):
+		"""
+		Evaluate a pixel-integrated Gaussian PRF at several points along a line
+		to simulate smearing. The loop in which each stellar PRF is added to 
+		the image is multithreaded with a number of threads one smaller than
+		the number of available CPUs.
+
+		Parameters
+		----------
+		stars (list):
+			List with an element for each star. Each element contains the
+			elements ``[row, col, [flux_R, flux_G, flux_B]]`` which are used
+			to generate the star. The row and column position corresponds
+			to the star position at the midtime of exposure.
+		integration_time (float):
+			CCD integration time.
+		angle_vel (float):
+			Angle in radians of star CCD movement.
+		speed (float):
+			Speed of a star in pixels. Default is ``Ǹone```which yields the 
+			standard speed estimated from the speed of the ISS.
+		fwhm (float):
+			Full width at half maximum of PSF in pixels. Default is ``1.``.
+		time_res (int):
+			Resolution in time. Determines how many evaluations of each PSF
+			is performed. Is converted to integer if not given as integer. 
+			Default is ``50.``.
+
+		Returns
+		-------
+		img (numpy array): Image with PRF evaluation smeared stars.
+		"""
+		self.integration_time = integration_time
+
+		# Set speed to standard speed if not given as parameter:
+		if speed is None:
+			speed = self.speed
+
+		# Convert time_res to integer:
+		time_res = int(np.ceil(time_res))
+
+		# Preallocate image array:
+		img = np.zeros(self.imshape, dtype=np.float64)
+		
+		# Make index grid from image for integratedGaussian:
+		self.X, self.Y = np.meshgrid(np.arange(0,self.imshape[1]), 
+						np.arange(0,self.imshape[0]))
+
+		# Prepare time array and position change:
+		row_col_trail_length = speed*integration_time*np.array(
+													[np.sin(angle_vel),
+													np.cos(angle_vel)])
+		row_col_start = -0.5*row_col_trail_length
+		row_col_end = 0.5*row_col_trail_length
+		self.row_changes = np.linspace(row_col_start[0], row_col_end[0], time_res)
+		self.col_changes = np.linspace(row_col_start[1], row_col_end[1], time_res)
+
+		# Set number of threads to the number of CPUs minus 1:
+		threads = multiprocessing.cpu_count() - 1
+	
+		# Set up multiprocessing if multiple threads are available:
+		if threads > 1:
+			pool = multiprocessing.Pool(threads)
+			m = pool.starmap
+		else:
+			m = map
+
+		# Evaluate the PSF of each star in each pixel at some time steps:
+		for PRF in m(self.make_PRF, stars):
+			# Add current PRF to image:
+			img += PRF
+
+		if threads > 1:
+			# Close multithreading:
+			pool.close()
+			pool.join()
+
+		return img
+
+
+
+	def make_PRF(self, star_row, star_col, star_flux):
+		"""
+		Evaluate the smeared, Bayer filtered PRF of a Gaussian star. Used by
+		self.evaluate.
+		"""
+		# Prepare Bayer flux array:
+		bayer_flux = np.zeros(self.imshape)
+
+		# Preallocate PRF array:
+		PRF = np.zeros(self.imshape)
+
+		# Prepare Bayer fluxes:
+		# Red:
+		bayer_flux[1::2,1::2] = star_flux[0]
+		# Green:
+		bayer_flux[0::2,1::2] = star_flux[1]
+		bayer_flux[1::2,0::2] = star_flux[1]
+		# Blue:
+		bayer_flux[0::2,0::2] = star_flux[2]
+
+		# Loop through the movements of the star on the CCD:
+		for row_change, col_change in zip(self.row_changes, self.col_changes):
+			# Update time dependent star CCD position:
+			star_row_t = star_row + row_change
+			star_col_t = star_col + col_change
+
+			# Calculate stellar PRF:
+			PRF += self.integratedGaussian(
+					self.X, self.Y, 1., star_col_t, star_row_t)
+
+		# Normalize the PRF:
+		PRF /= np.sum(np.sum(PRF))
+
+		# Apply integration time scaling:
+		PRF *= self.integration_time
+
+		# Multiply Bayer filtered flux array:
+		PRF = np.multiply(PRF, bayer_flux)
+
+		return PRF
 
 
 
 	def integrate_to_image(self, stars, integration_time, angle_vel, 
-			speed = None, fwhm = 1., jitter = False, focus = False):
+			speed = None, fwhm = 1., jitter = False, focus = False,
+			superres = 10):
 		"""
 		Integrate a PSF that is smeared in one direction to an image.
 
@@ -85,6 +214,9 @@ class PSF():
 		# Set speed to standard speed if not given as parameter:
 		if speed is None:
 			speed = self.speed
+
+		# Set subpixel resolution of PSF:
+		self.superres = superres # subpixel resolution
 
 		# Define subpixel buffer. Needs to be large for correct interpolation:
 		self.buffer = np.int(3*fwhm*self.superres)
@@ -130,7 +262,7 @@ class PSF():
 		for star in stars:
 			for row in range(self.imshape[0]):
 				for col in range(self.imshape[1]):
-					# Get star position in PSF(t=0)-based coordinates:
+					# Get star position in PSF(t=mid)-based coordinates:
 					row_cen = row - star[0]
 					col_cen = col - star[1]
 					# Integrate only significant contributions to avoid artefacts:
@@ -324,6 +456,7 @@ class PSF():
 		-------
 		
 		>>> import numpy as np
+		>>> from scipy.special import erf
 		>>> X, Y = np.meshgrid(np.arange(-1,2), np.arange(-1,2))
 		>>> integratedGaussian(X, Y, 10, 0, 0)
 		array([[ 0.58433556,  0.92564571,  0.58433556],
@@ -397,3 +530,4 @@ if __name__ == '__main__':
 
 	# Make space for the subplot titles:
 	fig.subplots_adjust(hspace=0.5, wspace=0.5)
+	
