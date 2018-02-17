@@ -156,17 +156,17 @@ def make_bayer_filter(img_shape):
 	"""
 
 	# Preallocate:
-	Bayer_flux = np.empty(img_shape, dtype=int)
+	bayer_filter = np.empty(img_shape, dtype=int)
 
 	# Red:
-	Bayer_flux[1::2,1::2] = 0
+	bayer_filter[1::2,1::2] = 0
 	# Green:
-	Bayer_flux[0::2,1::2] = 1
-	Bayer_flux[1::2,0::2] = 1
+	bayer_filter[0::2,1::2] = 1
+	bayer_filter[1::2,0::2] = 1
 	# Blue:
-	Bayer_flux[0::2,0::2] = 2
+	bayer_filter[0::2,0::2] = 2
 
-	return Bayer_flux
+	return bayer_filter
 
 
 
