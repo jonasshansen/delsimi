@@ -34,12 +34,12 @@ if __name__ == '__main__':
 	parser.add_argument('-s', '--angle_sat', 
 			help='Satellite angle.',
 			default=0.)
-	parser.add_argument('-v', '--maxVmag', 
-		help='Satellite angle.',
-		default=0.)
+	parser.add_argument('-m', '--maxVmag', 
+			help='Maximum V magnitude of stars to include.',
+			default=5.)
 	parser.add_argument('-r', '--spat_res', 
-	help='Satellite angle.',
-	default=0.)
+			help='Spatial resolution in evaluations per pixel.',
+			default=10.)
 	
 	
 	# Save to variables:

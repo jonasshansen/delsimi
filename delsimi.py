@@ -126,6 +126,10 @@ class delsimi(object):
 		cat = make_astroquery(ra=coord_cen[0], dec=coord_cen[1],
 						radius=radius, maxVmag=self.maxVmag)
 
+		# Return error if there are no stars in catalog:
+		if cat.shape[0] is 0:
+			raise ValueError('There are no stars in catalog. Increase maxVmag')
+
 		# Set R values to V values if the R values are NaN:
 		nan_pos = np.isnan(cat[:,2])
 		cat[:,2][nan_pos] = cat[:,3][nan_pos]
