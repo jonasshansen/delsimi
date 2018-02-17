@@ -5,3 +5,4 @@ scikit-image
 astropy
 string
 astroquery
+multiprocessing
