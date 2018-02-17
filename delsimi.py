@@ -144,10 +144,14 @@ class delsimi(object):
 #			dpsf.integrate_to_image(stars=stars,
 #				integration_time=self.integration_time,
 #				angle_vel=self.angle_vel, speed=speed, fwhm=1., superres=10)
+
+		# Set time resolution to 10 steps per pixel units the stars cross:
+		time_res = 10 * self.integration_time * speed
+
 		# Evaluate stars to image:
 		img = dpsf.evaluate(stars=stars, integration_time=self.integration_time,
 					angle_vel=self.angle_vel, speed=speed, fwhm=1., 
-					time_res=10)
+					time_res=time_res)
 
 
 		""" Make noise """
