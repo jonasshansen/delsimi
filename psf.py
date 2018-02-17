@@ -11,6 +11,8 @@ from scipy.special import erf
 from scipy.signal import convolve2d
 from scipy.interpolate import RectBivariateSpline
 from skimage.draw import line_aa
+import os
+import multiprocessing
 
 from utilities import make_bayer_filter
 
@@ -44,10 +46,12 @@ class PSF():
 
 
 	def evaluate(self, stars, integration_time, angle_vel, speed=None, fwhm=1,
-			time_res=50):
+			time_res=50.):
 		"""
 		Evaluate a pixel-integrated Gaussian PRF at several points along a line
-		to simulate smearing.
+		to simulate smearing. The loop in which each stellar PRF is added to 
+		the image is multithreaded with a number of threads one smaller than
+		the number of available CPUs.
 
 		Parameters
 		----------
@@ -67,25 +71,28 @@ class PSF():
 			Full width at half maximum of PSF in pixels. Default is ``1.``.
 		time_res (int):
 			Resolution in time. Determines how many evaluations of each PSF
-			is performed.
+			is performed. Is converted to integer if not given as integer. 
+			Default is ``50.``.
 
 		Returns
 		-------
 		img (numpy array): Image with PRF evaluation smeared stars.
 		"""
+		self.integration_time = integration_time
+
 		# Set speed to standard speed if not given as parameter:
 		if speed is None:
 			speed = self.speed
+
+		# Convert time_res to integer:
+		time_res = int(time_res)
 
 		# Preallocate image array:
 		img = np.zeros(self.imshape, dtype=np.float64)
 		
 		# Make index grid from image for integratedGaussian:
-		X, Y = np.meshgrid(np.arange(0,self.imshape[1]), 
+		self.X, self.Y = np.meshgrid(np.arange(0,self.imshape[1]), 
 						np.arange(0,self.imshape[0]))
-
-		# Prepare Bayer flux array:
-		bayer_flux = np.zeros_like(img)
 
 		# Prepare time array and position change:
 		row_col_trail_length = speed*integration_time*np.array(
@@ -93,45 +100,73 @@ class PSF():
 													np.cos(angle_vel)])
 		row_col_start = -0.5*row_col_trail_length
 		row_col_end = 0.5*row_col_trail_length
-		row_changes = np.linspace(row_col_start[0], row_col_end[0], time_res)
-		col_changes = np.linspace(row_col_start[1], row_col_end[1], time_res)
+		self.row_changes = np.linspace(row_col_start[0], row_col_end[0], time_res)
+		self.col_changes = np.linspace(row_col_start[1], row_col_end[1], time_res)
+
+		# Set number of threads to the number of CPUs minus 1:
+		threads = multiprocessing.cpu_count() - 1
+	
+		# Set up multiprocessing if multiple threads are available:
+		if threads > 1:
+			pool = multiprocessing.Pool(threads)
+			m = pool.starmap
+		else:
+			m = map
 
 		# Evaluate the PSF of each star in each pixel at some time steps:
-		for star in stars:
-			# Preallocate PRF array:
-			PRF = np.zeros_like(img)
-
-			# Prepare Bayer fluxes:
-			# Red:
-			bayer_flux[1::2,1::2] = star[2][0]
-			# Green:
-			bayer_flux[0::2,1::2] = star[2][1]
-			bayer_flux[1::2,0::2] = star[2][1]
-			# Blue:
-			bayer_flux[0::2,0::2] = star[2][2]
-
-			# Loop through the movements of the star on the CCD:
-			for row_change, col_change in zip(row_changes, col_changes):
-				# Update time dependent star CCD position:
-				star_row = star[0] + row_change
-				star_col = star[1] + col_change
-
-				# Calculate stellar PRF:
-				PRF += self.integratedGaussian(X, Y, 1., star_col, star_row)
-
-			# Normalize the PRF:
-			PRF /= np.sum(np.sum(PRF))
-
-			# Apply integration time scaling:
-			PRF *= integration_time
-
-			# Apply Bayer filtered fluxes:
-			PRF = np.multiply(PRF, bayer_flux)
-
+		for PRF in m(self.make_PRF, stars):
 			# Add current PRF to image:
 			img += PRF
 
+		if threads > 1:
+			# Close multithreading:
+			pool.close()
+			pool.join()
+
 		return img
+
+
+
+	def make_PRF(self, star_row, star_col, star_flux):
+		"""
+		Evaluate the smeared, Bayer filtered PRF of a Gaussian star. Used by
+		self.evaluate.
+		"""
+		# Prepare Bayer flux array:
+		bayer_flux = np.zeros(self.imshape)
+
+		# Preallocate PRF array:
+		PRF = np.zeros(self.imshape)
+
+		# Prepare Bayer fluxes:
+		# Red:
+		bayer_flux[1::2,1::2] = star_flux[0]
+		# Green:
+		bayer_flux[0::2,1::2] = star_flux[1]
+		bayer_flux[1::2,0::2] = star_flux[1]
+		# Blue:
+		bayer_flux[0::2,0::2] = star_flux[2]
+
+		# Loop through the movements of the star on the CCD:
+		for row_change, col_change in zip(self.row_changes, self.col_changes):
+			# Update time dependent star CCD position:
+			star_row_t = star_row + row_change
+			star_col_t = star_col + col_change
+
+			# Calculate stellar PRF:
+			PRF += self.integratedGaussian(
+					self.X, self.Y, 1., star_col_t, star_row_t)
+
+		# Normalize the PRF:
+		PRF /= np.sum(np.sum(PRF))
+
+		# Apply integration time scaling:
+		PRF *= self.integration_time
+
+		# Multiply Bayer filtered flux array:
+		PRF = np.multiply(PRF, bayer_flux)
+
+		return PRF
 
 
 
