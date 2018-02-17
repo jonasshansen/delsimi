@@ -34,6 +34,12 @@ if __name__ == '__main__':
 	parser.add_argument('-s', '--angle_sat', 
 			help='Satellite angle.',
 			default=0.)
+	parser.add_argument('-v', '--maxVmag', 
+		help='Satellite angle.',
+		default=0.)
+	parser.add_argument('-r', '--spat_res', 
+	help='Satellite angle.',
+	default=0.)
 	
 	
 	# Save to variables:
@@ -46,6 +52,8 @@ if __name__ == '__main__':
 	integration_time = args.integration_time
 	angle_vel = args.angle_vel
 	angle_sat = args.angle_sat
+	maxVmag = args.maxVmag
+	spat_res = args.spat_res
 	
 	
 	# Run delsimi.py with the specified parameters:
@@ -55,4 +63,6 @@ if __name__ == '__main__':
 			coord_cen=coord_cen,
 			integration_time=integration_time,
 			angle_vel=angle_vel,
-			angle_sat=angle_sat)
+			angle_sat=angle_sat,
+			maxVmag=maxVmag,
+			spat_res=spat_res)

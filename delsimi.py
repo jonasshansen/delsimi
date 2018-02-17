@@ -22,7 +22,9 @@ class delsimi(object):
 					coord_cen=[56.75,24.11670],
 					integration_time=0.1,
 					angle_vel=0.,
-					angle_sat=0.):
+					angle_sat=0.,
+					maxVmag=5.,
+					spat_res=10.):
 		"""
 		Simulate stellar images from Delphini-1.
 
@@ -49,6 +51,14 @@ class delsimi(object):
 		angle_sat (float):
 			Angle of satellite in radians with respect to the ecliptic 
 			coordinates. Default is ``0.``.
+		maxVmag (float):
+			Maximum V magnitude of stars to include in image. All stars
+			brighter than this value will be included. Default is ``5.``.
+		spat_res (float):
+			Spatial resolution of smear evaluation. The PRF is evaluated at
+			each point along the star trail at a resolution of ``spat_res`` per
+			pixel. Default is ``10.``. The actual resolution may be slightly
+			higher than this value due to an integer conversion.
 
 		PSF
 		---
@@ -77,7 +87,6 @@ class delsimi(object):
 		https://github.com/jonasshansen/delsimi
 		"""
 
-
 		""" Set constants """
 		self.input_dir = input_dir
 		self.output_dir = output_dir
@@ -87,6 +96,8 @@ class delsimi(object):
 		self.integration_time = float(integration_time)
 		self.angle_vel = float(angle_vel)
 		self.angle_sat = float(angle_sat)
+		self.maxVmag = float(maxVmag)
+		self.spat_res = float(spat_res)
 
 		# Set gain:
 		self.gain = 25 # electrons per LSB or ADU
@@ -113,7 +124,7 @@ class delsimi(object):
 
 		# Make an astroquery within radius with max V mag 6:
 		cat = make_astroquery(ra=coord_cen[0], dec=coord_cen[1],
-						radius=radius, maxVmag=4.)
+						radius=radius, maxVmag=self.maxVmag)
 
 		# Set R values to V values if the R values are NaN:
 		nan_pos = np.isnan(cat[:,2])
@@ -145,8 +156,8 @@ class delsimi(object):
 #				integration_time=self.integration_time,
 #				angle_vel=self.angle_vel, speed=speed, fwhm=1., superres=10)
 
-		# Set time resolution to 10 steps per pixel units the stars cross:
-		time_res = 10 * self.integration_time * speed
+		# Set time resolution to spat_res steps per pixel units the stars cross:
+		time_res = self.spat_res * self.integration_time * speed
 
 		# Evaluate stars to image:
 		img = dpsf.evaluate(stars=stars, integration_time=self.integration_time,

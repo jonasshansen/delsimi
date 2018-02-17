@@ -85,7 +85,7 @@ class PSF():
 			speed = self.speed
 
 		# Convert time_res to integer:
-		time_res = int(time_res)
+		time_res = int(np.ceil(time_res))
 
 		# Preallocate image array:
 		img = np.zeros(self.imshape, dtype=np.float64)
