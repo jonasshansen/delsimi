@@ -86,6 +86,9 @@ class PSF():
 		if speed is None:
 			speed = self.speed
 
+		# Set subpixel resolution of PSF:
+		self.superres = superres # subpixel resolution
+
 		# Define subpixel buffer. Needs to be large for correct interpolation:
 		self.buffer = np.int(3*fwhm*self.superres)
 
@@ -397,3 +400,4 @@ if __name__ == '__main__':
 
 	# Make space for the subplot titles:
 	fig.subplots_adjust(hspace=0.5, wspace=0.5)
+	

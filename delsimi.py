@@ -131,7 +131,7 @@ class delsimi(object):
 
 		""" Make image """
 		# Instantiate PSF class:
-		dpsf = PSF(imshape=self.ccd_shape, superres=10)
+		dpsf = PSF(imshape=self.ccd_shape)
 
 		# Prepare list with star information:
 		stars = [[row, col, [flux_R, flux_G, flux_B]] for 
@@ -143,7 +143,7 @@ class delsimi(object):
 		img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp = \
 			dpsf.integrate_to_image(stars=stars,
 				integration_time=self.integration_time,
-				angle_vel=self.angle_vel, speed=speed, fwhm=1.)
+				angle_vel=self.angle_vel, speed=speed, fwhm=1., superres=10)
 
 
 		""" Make noise """
