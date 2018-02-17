@@ -11,7 +11,6 @@ from scipy.special import erf
 from scipy.signal import convolve2d
 from scipy.interpolate import RectBivariateSpline
 from skimage.draw import line_aa
-import os
 import multiprocessing
 
 from utilities import make_bayer_filter
