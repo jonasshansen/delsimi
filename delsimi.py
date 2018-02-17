@@ -113,7 +113,7 @@ class delsimi(object):
 
 		# Make an astroquery within radius with max V mag 6:
 		cat = make_astroquery(ra=coord_cen[0], dec=coord_cen[1],
-						radius=radius, maxVmag=6.)
+						radius=radius, maxVmag=4.)
 
 		# Set R values to V values if the R values are NaN:
 		nan_pos = np.isnan(cat[:,2])
@@ -140,10 +140,14 @@ class delsimi(object):
 					catalog['flux_R'], catalog['flux_G'], catalog['flux_B'])]
 
 		# Integrate stars to image:
-		img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp = \
-			dpsf.integrate_to_image(stars=stars,
-				integration_time=self.integration_time,
-				angle_vel=self.angle_vel, speed=speed, fwhm=1., superres=10)
+#		img, smearKernel, PSFhighres, highresConvPSF, highresImageInterp = \
+#			dpsf.integrate_to_image(stars=stars,
+#				integration_time=self.integration_time,
+#				angle_vel=self.angle_vel, speed=speed, fwhm=1., superres=10)
+		# Evaluate stars to image:
+		img = dpsf.evaluate(stars=stars, integration_time=self.integration_time,
+					angle_vel=self.angle_vel, speed=speed, fwhm=1., 
+					time_res=10)
 
 
 		""" Make noise """
