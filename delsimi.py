@@ -130,9 +130,11 @@ class delsimi(object):
 		if cat.shape[0] is 0:
 			raise ValueError('There are no stars in catalog. Increase maxVmag')
 
-		# Set R values to V values if the R values are NaN:
+		# Set R and B values to V values if they are NaN:
 		nan_pos = np.isnan(cat[:,2])
 		cat[:,2][nan_pos] = cat[:,3][nan_pos]
+		nan_pos = np.isnan(cat[:,4])
+		cat[:,4][nan_pos] = cat[:,3][nan_pos]
 
 		# Convert catalog to format used by make_catalog:
 		cat_input = [np.arange(cat.shape[0], dtype=int)] # starid, internal
