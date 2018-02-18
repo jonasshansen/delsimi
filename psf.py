@@ -78,6 +78,7 @@ class PSF():
 		img (numpy array): Image with PRF evaluation smeared stars.
 		"""
 		self.integration_time = integration_time
+		self.fwhm = fwhm
 
 		# Set speed to standard speed if not given as parameter:
 		if speed is None:
@@ -153,11 +154,23 @@ class PSF():
 			star_col_t = star_col + col_change
 
 			# Calculate stellar PRF:
-			PRF += self.integratedGaussian(
-					self.X, self.Y, 1., star_col_t, star_row_t)
+			PRF_t = self.integratedGaussian(
+					self.X, self.Y, 1., star_col_t, star_row_t,
+					self.fwhm/(2*np.sqrt(2*np.log(2)))
+					)
 
-		# Normalize the PRF:
-		PRF /= np.sum(np.sum(PRF))
+			# Cutoff values lower than a given magnitude:
+			PRF_t[PRF_t < 1e-9] = 0.
+
+			# Add to the smeared PRF:
+			PRF += PRF_t
+
+		# Normalize the PRF, do nothing if sum near 0 (star outside frame):
+		PRFsum = np.sum(np.sum(PRF))
+		if PRFsum > 1e-6:
+			PRF /= PRFsum
+		else:
+			pass
 
 		# Apply integration time scaling:
 		PRF *= self.integration_time
