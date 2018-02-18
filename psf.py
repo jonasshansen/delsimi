@@ -85,7 +85,7 @@ class PSF():
 			speed = self.speed
 
 		# Convert time_res to integer:
-		time_res = int(np.ceil(time_res))
+		self.time_res = int(np.ceil(time_res))
 
 		# Preallocate image array:
 		img = np.zeros(self.imshape, dtype=np.float64)
@@ -100,8 +100,8 @@ class PSF():
 													np.cos(angle_vel)])
 		row_col_start = -0.5*row_col_trail_length
 		row_col_end = 0.5*row_col_trail_length
-		self.row_changes = np.linspace(row_col_start[0], row_col_end[0], time_res)
-		self.col_changes = np.linspace(row_col_start[1], row_col_end[1], time_res)
+		self.row_changes = np.linspace(row_col_start[0], row_col_end[0], self.time_res)
+		self.col_changes = np.linspace(row_col_start[1], row_col_end[1], self.time_res)
 
 		# Set number of threads to the number of CPUs minus 1:
 		threads = multiprocessing.cpu_count() - 1
@@ -165,13 +165,10 @@ class PSF():
 			# Add to the smeared PRF:
 			PRF += PRF_t
 
-		# Normalize the PRF with the amount of evaluations:
-		PRF /= self.row_changes.size
+		# Scale with time resolution (evaluations per second):
+		PRF /= self.time_res
 
-		# Apply integration time scaling:
-		PRF *= self.integration_time
-
-		# Multiply Bayer filtered flux array:
+		# Multiply Bayer filtered flux (e- per second) array:
 		PRF = np.multiply(PRF, bayer_flux)
 
 		return PRF
