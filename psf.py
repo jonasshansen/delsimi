@@ -156,8 +156,12 @@ class PSF():
 			PRF += self.integratedGaussian(
 					self.X, self.Y, 1., star_col_t, star_row_t)
 
-		# Normalize the PRF:
-		PRF /= np.sum(np.sum(PRF))
+		# Normalize the PRF, do nothing if near 0 (star outside frame):
+		PRFsum = np.sum(np.sum(PRF))
+		if PRFsum > 1e-6:
+			PRF /= PRFsum
+		else:
+			pass
 
 		# Apply integration time scaling:
 		PRF *= self.integration_time
