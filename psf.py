@@ -159,18 +159,14 @@ class PSF():
 					self.fwhm/(2*np.sqrt(2*np.log(2)))
 					)
 
-			# Cutoff values lower than a given magnitude:
+			# Set values lower than a given cutoff to zero:
 			PRF_t[PRF_t < 1e-9] = 0.
 
 			# Add to the smeared PRF:
 			PRF += PRF_t
 
-		# Normalize the PRF, do nothing if sum near 0 (star outside frame):
-		PRFsum = np.sum(np.sum(PRF))
-		if PRFsum > 1e-6:
-			PRF /= PRFsum
-		else:
-			pass
+		# Normalize the PRF with the amount of evaluations:
+		PRF /= self.row_changes.size
 
 		# Apply integration time scaling:
 		PRF *= self.integration_time
