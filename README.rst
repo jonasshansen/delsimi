@@ -64,7 +64,7 @@ Show all available parameters by executing::
 FUTURE EXTENSIONS
 =================
 Several extensions are proposed in the following which is largely inspired by 
-the SPyFFI manual (<https://github.com/TESScience/SPyFFI>`_).
+the SPyFFI manual (https://github.com/TESScience/SPyFFI).
 - Position variable PSF (not compatible with convolution)
 - Realistic constant used for magnitude to flux conversion (color dependent)
 - Realistic Johnson-Cousins BVR to RGB magnitude conversion constants
@@ -82,4 +82,4 @@ the SPyFFI manual (<https://github.com/TESScience/SPyFFI>`_).
 DISTRIBUTION
 ============
 The code is available on the online repository 
-<https://github.com/jonasshansen/delsimi/>`_
+https://github.com/jonasshansen/delsimi/
